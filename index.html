@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kurum Deneme Takvimi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- GİRİŞ -->
+<div id="v-login" class="login gut" hidden>
+  <section class="panel">
+    <div>
+      <h1>Kurum Deneme Takvimi</h1>
+      <p class="hint">Deneme siparişi vermek ve takviminizi görmek için giriş yapın.</p>
+    </div>
+    <div class="tabs" role="tablist">
+      <button id="t-giris" role="tab" aria-selected="true">Giriş yap</button>
+      <button id="t-kayit" role="tab" aria-selected="false">İlk kez giriş</button>
+    </div>
+    <form id="f-login" style="display:grid;gap:12px">
+      <div class="field"><label for="l-email">E-posta</label><input id="l-email" type="email" required autocomplete="email"></div>
+      <div class="field"><label for="l-sifre">Şifre</label><input id="l-sifre" type="password" required minlength="6" autocomplete="current-password"></div>
+      <p class="hint" id="kayit-hint" hidden>Yöneticinin size tanımladığı e-postayı yazın ve kendinize bir şifre belirleyin (en az 6 karakter).</p>
+      <button class="primary" type="submit" id="l-btn">Giriş yap</button>
+      <div class="msg" id="l-msg" role="status"></div>
+      <button type="button" class="linkbtn" id="l-unuttum">Şifremi unuttum</button>
+    </form>
+  </section>
+</div>
+
+<!-- UYGULAMA -->
+<div id="v-app" hidden>
+  <header class="band gut">
+    <div class="in">
+      <div>
+        <div class="who"><span id="who"></span><button id="cikis">Çıkış</button></div>
+        <div class="today" id="today"></div>
+        <h1 id="baslik">Kurum Deneme Takvimi</h1>
+        <p id="altbaslik"></p>
+      </div>
+      <div class="sum" id="sum"></div>
+    </div>
+  </header>
+
+  <div class="main gut">
+    <div class="in cols">
+      <div class="stack">
+        <!-- yönetici: yeni siparişler -->
+        <section class="panel" id="p-siparis" hidden aria-labelledby="siparis-h">
+          <h2 id="siparis-h">Onay bekleyen siparişler <span class="badge" id="siparis-n"></span></h2>
+          <div class="orders" id="orders"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="yaklasan-h">
+          <h2 id="yaklasan-h">Bu hafta yaklaşanlar</h2>
+          <div class="alerts" id="alerts"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="takvim-h">
+          <h2 id="takvim-h">Deneme takvimi</h2>
+          <div class="pick">
+            <div class="field" id="ksec-wrap"><label for="ksec">Kurum</label><select id="ksec"></select></div>
+            <div class="field"><label for="yil">Eğitim yılı</label><select id="yil"></select></div>
+          </div>
+          <div class="kurum-head">
+            <div><div class="label" id="kurum-yil"></div><h3 id="kurum-h"></h3></div>
+            <div class="stats" id="stats"></div>
+          </div>
+          <div class="strip" id="strip" aria-label="Aylara göre deneme sayısı"></div>
+          <div class="list" id="list"></div>
+        </section>
+
+        <!-- yönetici: kurumlar -->
+        <details class="panel" id="p-kurumlar" hidden>
+          <summary>Kurumlar</summary>
+          <form id="f-kurum" style="display:grid;gap:10px">
+            <div class="two">
+              <div class="field"><label for="k-ad">Kurum adı</label><input id="k-ad" required placeholder="Atatürk Ortaokulu"></div>
+              <div class="field"><label for="k-tel">Telefon</label><input id="k-tel" placeholder="İsteğe bağlı"></div>
+            </div>
+            <div class="field"><label for="k-email">Giriş e-postası</label><input id="k-email" type="email" required placeholder="kurum@ornek.com"></div>
+            <p class="hint">Kurum bu e-postayla "İlk kez giriş" sekmesinden kendi şifresini belirler.</p>
+            <div class="row"><button class="primary" type="submit" id="k-btn">Kurum ekle</button><button type="button" id="k-iptal" hidden>Vazgeç</button></div>
+            <div class="msg" id="k-msg" role="status"></div>
+          </form>
+          <div class="ktable" id="ktable"></div>
+        </details>
+      </div>
+
+      <aside>
+        <section class="panel" aria-labelledby="form-h">
+          <h2 id="form-h">Deneme siparişi ver</h2>
+          <form id="f" autocomplete="off">
+            <div class="field" id="fk-wrap" hidden><label for="fkurum">Kurum</label><select id="fkurum"></select></div>
+            <div class="field"><label for="tarih">Tarih</label><input id="tarih" type="date" required></div>
+            <div class="field"><label for="ad">Deneme adı / yayın</label><input id="ad" placeholder="Örn. LGS Deneme 3"></div>
+            <div class="two">
+              <div class="field"><label for="sinif">Sınıf</label><input id="sinif" placeholder="8. sınıf"></div>
+              <div class="field"><label for="ogrenci">Öğrenci sayısı</label><input id="ogrenci" type="number" min="0" inputmode="numeric" placeholder="35"></div>
+            </div>
+            <div class="field"><label for="notlar">Not</label><input id="notlar" placeholder="Saat, teslim adresi…"></div>
+            <div class="row">
+              <button class="primary" type="submit" id="kaydet">Siparişi gönder</button>
+              <button type="button" id="iptal" hidden>Vazgeç</button>
+            </div>
+            <div class="msg" id="msg" role="status"></div>
+          </form>
+          <div class="store" id="store"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div id="v-yok" class="login gut" hidden>
+  <section class="panel">
+    <h1>Hesap tanımlı değil</h1>
+    <p class="hint" id="yok-msg"></p>
+    <button id="cikis2">Çıkış yap</button>
+  </section>
+</div>
+
+<div id="v-ayar" class="login gut" hidden>
+  <section class="panel">
+    <h1>Kurulum eksik</h1>
+    <p class="hint">config.js dosyasına Supabase adresi ve anahtarı girilmemiş. README'deki 2. adıma bakın.</p>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -26,8 +26,8 @@ SCENES = [
                 "İnce paketteki demir sayısı ile kalın paketteki demir sayısının farkı kaçtır?",
                 "A) 2     B) 10     C) 16     D) 20"]),
     dict(kind="pause",
-         tts="videoyu durdur, önce sen dene!",
-         title="Önce sen dene!",
+         tts="videoyu durdur, önce sen çöz ve cevabını yoruma yaz!",
+         title="Önce sen çöz!",
          lines=[], extra_silence=2.5),
     dict(kind="step",
          tts=("adım bir. paketlerin kütlesi eşit ve her pakette tek çeşit demir var. "
@@ -70,7 +70,7 @@ SCENES = [
               "kalın demir paketinde, bin yedi yüz elli bölü otuz beş, elli demir var. "
               "fark, yetmiş eksi elli, yirmi. doğru cevap, de şıkkı!"),
          title="4. Adım · Fark",
-         say="Fark 20. Cevap: D",
+         say="Cevap D! Doğru bulduysan yoruma yaz.",
          lines=["İnce:   1750 ÷ 25 = 70 demir",
                 "Kalın:  1750 ÷ 35 = 50 demir",
                 "Fark:   70 − 50 = 20",

@@ -104,14 +104,14 @@ if __name__ == "__main__":
     av = draw_avatar(520, mouth=0.5)
     card.paste(av, ((W - av.width) // 2, 80), av)
     f1 = ImageFont.truetype(B, 84)
-    d.text((W / 2, 720), "AI Hocam", font=f1, fill=TEAL_D, anchor="mm")
+    d.text((W / 2, 720), "İA Hocam", font=f1, fill=TEAL_D, anchor="mm")
     f2 = ImageFont.truetype(R, 36)
     d.text((W / 2, 790), "LGS sorularını adım adım çözen robot öğretmen", font=f2, fill=NAVY, anchor="mm")
     lines = [
         ("Görünüm", "Ekran yüz, gözlük, kep, papyon"),
         ("Renkler", "Turkuaz, lacivert, mercan"),
         ("Tarzı", "Samimi, sakin, cesaret veren"),
-        ("Açılış", "\"Selam! Ben AI Hocam.\""),
+        ("Açılış", "\"Selam! Ben İA Hocam.\""),
         ("Kapanış", "\"Takip et, her gün bir LGS sorusu!\""),
     ]
     f3b = ImageFont.truetype(B, 32)

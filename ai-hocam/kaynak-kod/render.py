@@ -27,7 +27,18 @@ def font(path, size, _c={}):
 
 
 # ---------- ses ----------
+VOICE_DIR = os.environ.get("VOICE_DIR")
+
+
 def synth(i, text):
+    if VOICE_DIR:
+        p = os.path.join(WORK, f"v{i}.wav")
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", os.path.join(VOICE_DIR, f"s{i}.mp3"), "-ac", "1",
+                        "-ar", "24000", p], check=True)
+        with wave.open(p) as w:
+            sr = w.getframerate()
+            a = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768
+        return sr, a
     p = os.path.join(WORK, f"s{i}.wav")
     if not os.path.exists(p):
         subprocess.run([TTS, "--text", text, "--model_path", f"{M}/model_file.pth", "--config_path",
@@ -78,21 +89,21 @@ mouth = np.convolve(mouth, [0.25, 0.5, 0.25], mode="same")
 # ---------- statik katmanlar ----------
 def background():
     im = Image.new("RGB", (W, H))
-    top, bot = np.array((11, 18, 38)), np.array((14, 64, 62))
+    top, bot = np.array((255, 247, 237)), np.array((253, 210, 160))
     g = np.linspace(0, 1, H)[:, None]
     arr = (top * (1 - g) + bot * g).astype(np.uint8)
     im = Image.fromarray(np.repeat(arr[:, None, :], W, axis=1).reshape(H, W, 3))
     d = ImageDraw.Draw(im)
     for y in range(0, H, 48):
         for x in range(0, W, 48):
-            d.point((x, y), fill=(40, 80, 90))
+            d.ellipse([x - 2, y - 2, x + 2, y + 2], fill=(240, 200, 160))
     # başlık
-    d.rounded_rectangle([60, 95, 430, 165], radius=35, fill=TEAL)
-    d.text((245, 130), mod.META["etiket"], font=font(B, 34), fill=NAVY, anchor="mm")
+    d.rounded_rectangle([60, 95, 430, 165], radius=35, fill=NAVY)
+    d.text((245, 130), mod.META["etiket"], font=font(B, 34), fill=WHITE, anchor="mm")
     av = draw_avatar(90, mouth=0.0)
     im.paste(av, (W - 360, 78), av)
-    d.text((W - 260, 130), "AI Hocam", font=font(B, 46), fill=WHITE, anchor="lm")
-    d.text((W / 2, 225), mod.META["kaynak"], font=font(R, 27), fill=(153, 246, 228), anchor="mm")
+    d.text((W - 260, 130), "İA Hocam", font=font(B, 46), fill=NAVY, anchor="lm")
+    d.text((W / 2, 225), mod.META["kaynak"], font=font(R, 27), fill=(71, 85, 105), anchor="mm")
     return im
 
 
@@ -130,16 +141,16 @@ def is_answer(sc, line):
 
 def draw_board(base, sc, sidx, t_in, t_speech):
     d = ImageDraw.Draw(base, "RGBA")
-    d.rounded_rectangle([BX0, BY0, BX1, BY1], radius=36, fill=(16, 42, 44), outline=TEAL, width=5)
+    d.rounded_rectangle([BX0, BY0, BX1, BY1], radius=36, fill=(22, 33, 56), outline=NAVY, width=6)
     # adım noktaları
     steps = [i for i, s in enumerate(mod.SCENES) if s["kind"] == "step"]
     if steps:
         for k, si in enumerate(steps):
             x = BX1 - 60 - (len(steps) - 1 - k) * 40
             on = sidx >= si
-            d.ellipse([x - 11, BY0 + 49, x + 11, BY0 + 71], fill=GOLD if on else (60, 90, 95))
+            d.ellipse([x - 11, BY0 + 49, x + 11, BY0 + 71], fill=GOLD if on else (70, 85, 115))
     d.text((BX0 + 55, BY0 + 60), sc["title"], font=font(B, 50), fill=GOLD, anchor="lm")
-    d.line([BX0 + 55, BY0 + 105, BX1 - 55, BY0 + 105], fill=(45, 120, 115), width=3)
+    d.line([BX0 + 55, BY0 + 105, BX1 - 55, BY0 + 105], fill=(60, 75, 105), width=3)
 
     if sc["kind"] == "pause":
         # geri sayım
@@ -147,7 +158,7 @@ def draw_board(base, sc, sidx, t_in, t_speech):
         n = 3 - int(max(0, el) / (sc.get("extra_silence", 2.5) / 3))
         cy = (BY0 + BY1) / 2 + 40
         d.ellipse([W / 2 - 190, cy - 190, W / 2 + 190, cy + 190], outline=TEAL, width=10)
-        txt = str(max(1, n)) if el > 0 else "⏸"
+        txt = str(max(1, n)) if el > 0 else "?"
         d.text((W / 2, cy), txt, font=font(B, 200), fill=WHITE, anchor="mm")
         return
 
@@ -178,8 +189,8 @@ def draw_board(base, sc, sidx, t_in, t_speech):
         y += lh
 
 
-BUBBLES = {"intro": "Selam! Ben AI Hocam.", "question": "Soruyu dikkatle oku.",
-           "pause": "Videoyu durdur, önce sen dene!", "outro": "Takip et, her gün 1 LGS sorusu!"}
+BUBBLES = {"intro": "Selam! Ben İA Hocam.", "question": "Soruyu dikkatle oku.",
+           "pause": "Önce sen çöz, cevabını yoruma yaz!", "outro": "Takip et, her gün 1 LGS sorusu!"}
 
 
 def bubble_text(sc):
@@ -193,8 +204,9 @@ def bubble_text(sc):
 def draw_bubble(base, txt):
     d = ImageDraw.Draw(base)
     x0, y0, x1, y1 = 470, 1320, 1020, 1500
-    d.rounded_rectangle([x0, y0, x1, y1], radius=36, fill=WHITE)
-    d.polygon([(x0 + 5, y0 + 70), (x0 - 40, y0 + 120), (x0 + 5, y0 + 110)], fill=WHITE)
+    d.rounded_rectangle([x0, y0, x1, y1], radius=36, fill=WHITE, outline=NAVY, width=5)
+    d.polygon([(x0 + 3, y0 + 70), (x0 - 40, y0 + 120), (x0 + 3, y0 + 110)], fill=WHITE, outline=NAVY)
+    d.line([x0 + 3, y0 + 75, x0 + 3, y0 + 105], fill=WHITE, width=6)
     f = font(B, 40)
     rows = wrap(txt, f, x1 - x0 - 70)
     yy = (y0 + y1) / 2 - (len(rows) - 1) * 26
@@ -251,7 +263,7 @@ for fr in range(nframes):
     frame.paste(av, (40, 1250 + bob), av)
     # ilerleme çubuğu
     d = ImageDraw.Draw(frame)
-    d.rectangle([0, 0, int(W * tt / total), 10], fill=TEAL)
+    d.rectangle([0, 0, int(W * tt / total), 10], fill=CORAL)
     proc.stdin.write(frame.tobytes())
 proc.stdin.close()
 proc.wait()

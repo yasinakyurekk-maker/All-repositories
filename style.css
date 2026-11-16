@@ -266,7 +266,7 @@ details.panel[open] summary::after{content:" −"}
 .secrow span{font-size:12px;color:var(--muted)}
 .secrow input{padding:6px 8px;font-size:13.5px}
 .flabel{font-size:13px;font-weight:600}
-.sboxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
+.sboxes{display:flex;flex-wrap:wrap;gap:6px}
 .sbox{display:flex;align-items:center;gap:5px;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--field);cursor:pointer}
 .sbox input{width:auto;margin:0}
 .sbox:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
@@ -275,3 +275,13 @@ details.panel[open] summary::after{content:" −"}
 .chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .chip .n{font-family:var(--f-mono);font-size:12px;opacity:.75;margin-left:5px}
 @media (max-width:520px){.titem.kur{grid-template-columns:28px 52px minmax(0,1fr)}.titem.kur .right{grid-column:3;justify-self:start;justify-content:flex-start}}
+
+/* takvimde güne tıklayıp ekleme */
+.dtop{display:flex;justify-content:space-between;align-items:center;gap:4px}
+.cal-add{width:22px;height:22px;padding:0;border-radius:6px;font-size:15px;line-height:1;display:grid;place-items:center;color:var(--accent);background:var(--accent-soft);border:1px solid transparent;opacity:.35}
+.cal-day.ekle{cursor:pointer}
+.cal-day.ekle:hover{border-color:var(--accent)}
+.cal-day.ekle:hover .cal-add,.cal-add:focus-visible{opacity:1}
+.cal-day.sec{border-color:var(--accent);background:var(--accent-soft)}
+.cal-day.sec .cal-add{opacity:1;background:var(--accent);color:var(--surface)}
+@media (max-width:620px){.cal-add{display:none}}

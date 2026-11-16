@@ -76,8 +76,10 @@
             <div class="field" style="flex:0 1 170px"><label for="dsec">Durum</label><select id="dsec"><option value="">Tümü</option><option value="bekliyor">Onay bekliyor</option><option value="onaylandi">Onaylandı</option><option value="iptal">İptal</option></select></div>
             <div class="field" style="flex:0 1 170px"><label for="zsec">Zaman</label><select id="zsec"><option value="">Tüm yıl</option><option value="gelecek">Yaklaşanlar</option><option value="gecmis">Yapılanlar</option></select></div>
             <button type="button" id="excel">Excel'e aktar</button>
+            <div class="tabs gorunum" role="tablist" aria-label="Görünüm"><button type="button" id="g-liste" role="tab" aria-selected="true">Liste</button><button type="button" id="g-takvim" role="tab" aria-selected="false">Aylık takvim</button></div>
           </div>
           <div class="list" id="list"></div>
+          <div class="cal" id="cal" hidden></div>
         </section>
 
         <!-- yönetici: kurumlar -->

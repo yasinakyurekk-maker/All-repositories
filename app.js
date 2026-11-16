@@ -28,7 +28,7 @@ function hataMetni(e){
 }
 
 // ---------- durum ----------
-const S={rol:null,email:"",kurumId:null,kurumlar:[],denemeler:[],secili:"",yil:egitimYili(todayStr()),editId:null,editKurum:null,confirm:null,kanal:null};
+const S={gorunum:"liste",ay:null,rol:null,email:"",kurumId:null,kurumlar:[],denemeler:[],secili:"",yil:egitimYili(todayStr()),editId:null,editKurum:null,confirm:null,kanal:null};
 const buYil=egitimYili(todayStr());
 
 // ---------- Supabase ----------
@@ -173,7 +173,26 @@ function render(){
         ${degisir?`<div class="row" style="gap:0"><button class="ghost" data-edit="${x.id}">Düzenle</button><button class="ghost danger" data-del="${x.id}">Sil</button></div>`:""}</div>
       ${S.confirm===x.id?`<div class="confirm">Bu deneme silinsin mi? <button class="danger" data-delok="${x.id}">Evet, sil</button><button data-delno="1">Vazgeç</button></div>`:""}
     </div>`}).join("")}
+  // aylık takvim görünümü
+  $("g-liste").setAttribute("aria-selected",S.gorunum==="liste");$("g-takvim").setAttribute("aria-selected",S.gorunum==="takvim");
+  $("list").hidden=S.gorunum!=="liste";$("cal").hidden=S.gorunum!=="takvim";
+  if(S.gorunum==="takvim")renderTakvim(rows,admin);
   $("store").textContent=admin?"Kurumların verdiği siparişler buraya anında düşer.":"Siparişiniz yönetici onaylayana kadar düzenlenebilir.";
+}
+function ayIcinde(y){const t=parts(todayStr());const i=t.y*12+t.m-1;return (i>=y*12+8&&i<=y*12+19)?i:y*12+8}
+function renderTakvim(rows,admin){
+  if(S.ay===null||S.ay<S.yil*12+8||S.ay>S.yil*12+19)S.ay=ayIcinde(S.yil);
+  const y=Math.floor(S.ay/12),m=S.ay%12+1;const first=new Date(y,m-1,1);const off=(first.getDay()+6)%7;const gunSay=new Date(y,m,0).getDate();
+  const tod=todayStr();
+  let h=`<div class="cal-head"><button type="button" data-ay="-1" ${S.ay<=S.yil*12+8?"disabled":""} aria-label="Önceki ay">‹</button><h4>${AYTAM[m-1]} ${y}</h4><button type="button" data-ay="1" ${S.ay>=S.yil*12+19?"disabled":""} aria-label="Sonraki ay">›</button></div><div class="cal-grid">`;
+  h+=["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"].map(d=>`<div class="cal-dow">${d}</div>`).join("");
+  const toplam=Math.ceil((off+gunSay)/7)*7;
+  for(let i=0;i<toplam;i++){const dt=new Date(y,m-1,i-off+1);const ds=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+    const ic=dt.getMonth()===m-1;const gun=rows.filter(x=>x.tarih===ds);
+    h+=`<div class="cal-day ${ic?"":"out"} ${ds===tod?"today":""} ${ic&&(dt.getDay()===0||dt.getDay()===6)?"wk":""}"><span class="dn">${dt.getDate()}</span>`+
+      gun.map(x=>`<button type="button" class="chipd ${x.durum} ${daysUntil(x.tarih)<0?"past":""}" ${(admin||x.durum==="bekliyor")?`data-edit="${x.id}"`:""} title="${esc((admin?kAd(x.kurum_id)+" · ":"")+(x.ad||"Deneme")+" · "+DURUM[x.durum])}"><b>${esc(admin?kAd(x.kurum_id):(x.ad||"Deneme"))}</b>${admin&&x.ad?`<span class="ad">${esc(x.ad)}</span>`:""}</button>`).join("")+`</div>`}
+  h+=`</div><div class="cal-legend"><span><i style="background:var(--accent-soft)"></i>Onaylandı</span><span><i style="background:var(--warn-soft)"></i>Onay bekliyor</span><span><i style="background:var(--crit-soft)"></i>İptal</span><span>Bir denemeye tıklayınca düzenlenir.</span></div>`;
+  $("cal").innerHTML=h;
 }
 function renderKurumlar(){
   $("ktable").innerHTML=S.kurumlar.length?S.kurumlar.map(k=>{const ds=S.denemeler.filter(x=>x.kurum_id===k.id&&egitimYili(x.tarih)===S.yil&&x.durum!=="iptal");
@@ -204,6 +223,8 @@ $("f").addEventListener("submit",async e=>{
   S.yil=egitimYili(body.tarih);if(admin)S.secili=body.kurum_id;formSifirla();yukle();
 });
 $("iptal").onclick=formSifirla;
+$("g-liste").onclick=()=>{S.gorunum="liste";render()};
+$("g-takvim").onclick=()=>{S.gorunum="takvim";render()};
 for(const id of ["ara","dsec","zsec"])$(id).addEventListener(id==="ara"?"input":"change",()=>render());
 // Excel (CSV) — Türkçe Excel için ; ayırıcı ve UTF-8 BOM
 $("excel").onclick=()=>{
@@ -216,7 +237,7 @@ $("excel").onclick=()=>{
   a.download="deneme-takvimi-"+(S.secili?kAd(S.secili).replace(/\s+/g,"-"):"tum-kurumlar")+"-"+S.yil+"-"+(S.yil+1)+".csv";
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
 $("ksec").onchange=e=>{S.secili=e.target.value;S.confirm=null;render()};
-$("yil").onchange=e=>{S.yil=Number(e.target.value);render()};
+$("yil").onchange=e=>{S.yil=Number(e.target.value);S.ay=null;render()};
 
 // ---------- kurum formu ----------
 let kEdit=null;
@@ -233,7 +254,8 @@ $("f-kurum").addEventListener("submit",async e=>{
 // ---------- tıklamalar ----------
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
-  if(d.m){const el=document.getElementById("m-"+d.m);if(el)el.scrollIntoView({block:"start"})}
+  if(d.m){const [yy,mm]=d.m.split("-").map(Number);if(S.gorunum==="takvim"){S.ay=yy*12+mm-1;render()}else{const el=document.getElementById("m-"+d.m);if(el)el.scrollIntoView({block:"start"})}}
+  else if(d.ay){S.ay+=Number(d.ay);render()}
   else if(d.onay||d.iptal){const {error}=await sb.from("denemeler").update({durum:d.onay?"onaylandi":"iptal"}).eq("id",d.onay||d.iptal);if(error)flash($("msg"),hataMetni(error),true);yukle()}
   else if(d.edit){const x=S.denemeler.find(y=>y.id===d.edit);if(!x)return;S.editId=x.id;S.editKurum=x.kurum_id;
     $("tarih").value=x.tarih;$("ad").value=x.ad||"";$("sinif").value=x.sinif||"";$("ogrenci").value=x.ogrenci??"";$("notlar").value=x.notlar||"";

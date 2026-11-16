@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Çöp Adamlar: Defter Kavgası</title>
+<style>
+  :root {
+    --paper: #f7f3e8;
+    --ink: #1f3a8a;
+    --red: #c0392b;
+    --text: #2b2b2b;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; background: #2a2a2e; overflow: hidden;
+    font-family: "Comic Sans MS", "Segoe Print", "Chalkboard SE", system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; touch-action: none;
+  }
+  #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  canvas { display: block; background: var(--paper); box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  #touch { position: fixed; inset: auto 0 0 0; display: none; justify-content: space-between; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); pointer-events: none; }
+  #touch .grp { display: flex; gap: 10px; pointer-events: auto; }
+  #touch button {
+    width: 64px; height: 64px; border-radius: 50%; border: 3px solid rgba(31,58,138,.7);
+    background: rgba(247,243,232,.75); color: var(--ink); font: 700 14px inherit; font-family: inherit;
+    touch-action: none;
+  }
+  #touch button.act { border-color: rgba(192,57,43,.8); color: var(--red); }
+  #touch button.down { background: rgba(31,58,138,.25); }
+  body.touch #touch { display: flex; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="touch">
+  <div class="grp">
+    <button data-k="left">◀</button>
+    <button data-k="right">▶</button>
+    <button data-k="jump">▲</button>
+  </div>
+  <div class="grp">
+    <button class="act" data-k="punch">Yumruk</button>
+    <button class="act" data-k="kick">Tekme</button>
+    <button class="act" data-k="super">Süper</button>
+  </div>
+</div>
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Kurulum ----------
+  const W = 960, H = 540, GROUND = 462;
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  let scale = 1;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+    canvas.style.width = Math.floor(W * scale) + "px";
+    canvas.style.height = Math.floor(H * scale) + "px";
+    canvas.width = Math.floor(W * scale * dpr);
+    canvas.height = Math.floor(H * scale * dpr);
+    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  let best = 0;
+  try { best = +localStorage.getItem("copAdamlarRekor") || 0; } catch (e) {}
+
+  // ---------- Girdi ----------
+  const keys = { left: false, right: false, jump: false, punch: false, kick: false, super: false };
+  const pressed = {}; // bu karede yeni basılanlar
+  const keyMap = {
+    ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right",
+    ArrowUp: "jump", KeyW: "jump", Space: "jump",
+    KeyJ: "punch", KeyZ: "punch", KeyK: "kick", KeyX: "kick", KeyL: "super", KeyC: "super",
+  };
+  function setKey(k, down) {
+    if (down && !keys[k]) pressed[k] = true;
+    keys[k] = down;
+  }
+  window.addEventListener("keydown", e => {
+    if (e.code === "KeyP" || e.code === "Escape") { if (game.state === "play") game.paused = !game.paused; return; }
+    if (e.code === "Enter") { pressed.start = true; }
+    if (e.code === "KeyI" && game.state !== "play") { game.auto = true; pressed.start = true; return; }
+    if (e.code === "KeyI" && game.state === "play") { game.auto = !game.auto; return; }
+    const k = keyMap[e.code];
+    if (k) { setKey(k, true); e.preventDefault(); if (game.state !== "play") pressed.start = true; }
+  });
+  window.addEventListener("keyup", e => { const k = keyMap[e.code]; if (k) setKey(k, false); });
+  window.addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+  if (window.matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
+  document.querySelectorAll("#touch button").forEach(b => {
+    const k = b.dataset.k;
+    const on = e => { e.preventDefault(); setKey(k, true); b.classList.add("down"); if (game.state !== "play") pressed.start = true; };
+    const off = e => { e.preventDefault(); setKey(k, false); b.classList.remove("down"); };
+    b.addEventListener("pointerdown", on);
+    b.addEventListener("pointerup", off);
+    b.addEventListener("pointercancel", off);
+    b.addEventListener("pointerleave", off);
+  });
+  canvas.addEventListener("pointerdown", () => { if (game.state !== "play") pressed.start = true; });
+
+  // ---------- Çöp adam pozu ----------
+  // Açılar: 0 = dümdüz aşağı, pozitif = baktığı yöne doğru.
+  function limb(from, ang, len, face) {
+    return { x: from.x + Math.sin(ang) * len * face, y: from.y + Math.cos(ang) * len };
+  }
+
+  function computePose(f) {
+    const s = f.size, face = f.face;
+    const t = f.anim;
+    let lean = 0, hipDrop = 0;
+    // [üst kol, ön kol] x2 (ön = baktığı yöndeki), [uyluk, baldır] x2
+    let aF = [0.5, 2.3], aB = [0.2, 1.9], lF = [0.25, 0.05], lB = [-0.2, -0.3];
+
+    const walking = Math.abs(f.vx) > 0.3 && f.onGround;
+    if (walking) {
+      const ph = t * 0.28;
+      const sw = Math.sin(ph) * 0.6;
+      lF = [sw, sw - 0.4 - Math.max(0, Math.cos(ph)) * 0.5];
+      lB = [-sw, -sw - 0.4 - Math.max(0, -Math.cos(ph)) * 0.5];
+      aF = [0.6 - sw * 0.3, 2.2]; aB = [0.3 + sw * 0.4, 1.7];
+      hipDrop = Math.abs(Math.sin(ph)) * 2;
+    } else if (f.onGround) {
+      const br = Math.sin(t * 0.08) * 0.05;
+      aF = [0.55 + br, 2.35]; aB = [0.25 + br, 1.95];
+      hipDrop = 2 + Math.sin(t * 0.08) * 1;
+    }
+    if (!f.onGround) {
+      lF = [0.9, -0.2]; lB = [0.2, -0.9]; aF = [1.2, 2.4]; aB = [-0.6, 0.4];
+    }
+
+    if (f.act) {
+      const p = f.actT / f.act.dur;
+      const k = f.act.name === "super" ? 0 : Math.sin(clamp((p - 0.1) / 0.6, 0, 1) * Math.PI);
+      if (f.act.name === "punch") {
+        aF = [aF[0] + (1.57 - aF[0]) * k, aF[1] + (1.57 - aF[1]) * k];
+        aB = [aB[0] - 0.4 * k, aB[1]];
+        lean = 0.15 * k;
+      } else if (f.act.name === "kick") {
+        lF = [lF[0] + (1.65 - lF[0]) * k, lF[1] + (1.6 - lF[1]) * k];
+        lean = -0.35 * k;
+        aF = [0.3 + 0.8 * k, 2.0]; aB = [-0.6 * k, 1.2];
+      } else if (f.act.name === "super") {
+        const spin = Math.sin(p * Math.PI * 6);
+        aF = [1.57, 1.57]; aB = [-1.57, -1.57];
+        lF = [0.6 * spin, 0.6 * spin]; lB = [-0.6 * spin, -0.6 * spin];
+        lean = 0;
+      } else if (f.act.name === "windup") {
+        aF = [-0.4, 0.6]; lean = -0.2;
+      }
+    }
+    if (f.hurt > 0) {
+      lean = -0.45; aF = [-0.8, -1.4]; aB = [-1.2, -2.0];
+    }
+
+    const hip = { x: f.x, y: f.y - 42 * s + hipDrop };
+    const neck = limb(hip, Math.PI + lean, 34 * s, face);
+    const head = limb(neck, Math.PI + lean * 1.3, 12 * s, face);
+    const fe = limb(neck, aF[0], 16 * s, face), fh = limb(fe, aF[1], 16 * s, face);
+    const be = limb(neck, aB[0], 16 * s, face), bh = limb(be, aB[1], 16 * s, face);
+    const fk = limb(hip, lF[0], 21 * s, face), ff = limb(fk, lF[1], 21 * s, face);
+    const bk = limb(hip, lB[0], 21 * s, face), bf = limb(bk, lB[1], 21 * s, face);
+    return { head, neck, hip, fe, fh, be, bh, fk, ff, bk, bf };
+  }
+
+  const BONES = [["head","neck"],["neck","hip"],["neck","fe"],["fe","fh"],["neck","be"],["be","bh"],
+                 ["hip","fk"],["fk","ff"],["hip","bk"],["bk","bf"]];
+
+  function drawFigure(pose, col, s, alpha, face, extra) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = col; ctx.fillStyle = col;
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineWidth = 4 * s;
+    ctx.beginPath();
+    const line = (a, b) => { ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); };
+    line(pose.neck, pose.hip);
+    line(pose.neck, pose.be); line(pose.be, pose.bh);
+    line(pose.hip, pose.bk); line(pose.bk, pose.bf);
+    line(pose.hip, pose.fk); line(pose.fk, pose.ff);
+    line(pose.neck, pose.fe); line(pose.fe, pose.fh);
+    ctx.stroke();
+    // kafa
+    const hx = pose.head.x, hy = pose.head.y - 4 * s;
+    ctx.beginPath(); ctx.arc(hx, hy, 11 * s, 0, Math.PI * 2);
+    ctx.fillStyle = "#f7f3e8"; ctx.fill(); ctx.stroke();
+    // göz
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(hx + 4 * s * face, hy - 2 * s, 1.8 * s, 0, Math.PI * 2); ctx.fill();
+    if (extra) extra(hx, hy);
+    ctx.restore();
+  }
+
+  // ---------- Dünya ----------
+  const game = {
+    state: "title", paused: false, t: 0, auto: /[?&]izle/.test(location.search), slow: 0,
+    player: null, enemies: [], ragdolls: [], particles: [], pickups: [], texts: [],
+    wave: 0, queue: 0, spawnT: 0, waveT: 0, score: 0, combo: 0, comboT: 0, shake: 0, hitstop: 0,
+  };
+
+  const ENEMY_TYPES = {
+    normal: { col: "#5b5b5b", size: 1,    hp: 30, speed: 1.5, dmg: 8,  score: 100 },
+    hizli:  { col: "#c0392b", size: 0.85, hp: 18, speed: 2.8, dmg: 6,  score: 150 },
+    iri:    { col: "#6d3b8e", size: 1.35, hp: 80, speed: 0.9, dmg: 16, score: 300 },
+  };
+
+  function makeFighter(x, isPlayer, type) {
+    const tp = isPlayer ? null : ENEMY_TYPES[type];
+    return {
+      x, y: GROUND, vx: 0, vy: 0, face: 1, onGround: true,
+      size: isPlayer ? 1 : tp.size, col: isPlayer ? "#1f3a8a" : tp.col,
+      hp: isPlayer ? 100 : tp.hp, maxHp: isPlayer ? 100 : tp.hp,
+      speed: isPlayer ? 3.4 : tp.speed * rand(0.9, 1.15), dmg: isPlayer ? 0 : tp.dmg,
+      type, isPlayer, act: null, actT: 0, hitDone: new Set(), hurt: 0, inv: 0,
+      cd: rand(30, 80), anim: rand(0, 100), superM: 0, tp,
+    };
+  }
+
+  const ACTS = {
+    punch:  { name: "punch",  dur: 18, from: 5,  to: 10, range: 58, dmg: 10, knock: 4,  up: -2 },
+    kick:   { name: "kick",   dur: 26, from: 9,  to: 15, range: 74, dmg: 16, knock: 8,  up: -4 },
+    super:  { name: "super",  dur: 42, from: 6,  to: 36, range: 130, dmg: 30, knock: 13, up: -8, all: true },
+    windup: { name: "windup", dur: 22, next: "epunch" },
+    epunch: { name: "punch",  dur: 16, from: 3,  to: 8,  range: 54, knock: 6, up: -3 },
+  };
+
+  function startAct(f, key) {
+    f.act = ACTS[key]; f.actT = 0; f.hitDone = new Set();
+  }
+
+  function newGame() {
+    game.player = makeFighter(W / 2, true);
+    Object.assign(game, { enemies: [], ragdolls: [], particles: [], pickups: [], texts: [],
+      wave: 0, queue: 0, spawnT: 0, waveT: 90, score: 0, combo: 0, comboT: 0, shake: 0, state: "play", paused: false });
+  }
+
+  function nextWave() {
+    game.wave++;
+    game.queue = 2 + game.wave * 2;
+    game.spawnT = 40;
+    floatText(W / 2, 200, "Dalga " + game.wave, "#1f3a8a", 40, 90);
+  }
+
+  function spawnEnemy() {
+    const w = game.wave;
+    let type = "normal";
+    const r = Math.random();
+    if (w >= 2 && r < 0.3) type = "hizli";
+    if (w >= 3 && r > 0.85) type = "iri";
+    const left = Math.random() < 0.5;
+    const e = makeFighter(left ? -40 : W + 40, false, type);
+    e.face = left ? 1 : -1;
+    game.enemies.push(e);
+  }
+
+  function floatText(x, y, str, col, size, life) {
+    game.texts.push({ x, y, str, col, size: size || 22, life: life || 50, max: life || 50 });
+  }
+
+  function burst(x, y, col, n, power) {
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2), sp = rand(1, power || 6);
+      game.particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1, life: rand(18, 34), col, len: rand(4, 10) });
+    }
+  }
+
+  // ---------- Ragdoll (verlet) ----------
+  function makeRagdoll(f, kx, ky) {
+    const pose = computePose(f);
+    const pts = {};
+    for (const k in pose) {
+      const p = pose[k];
+      pts[k] = { x: p.x, y: p.y, ox: p.x - kx * rand(0.7, 1.3), oy: p.y - ky * rand(0.7, 1.3) };
+    }
+    pts.head.ox -= kx * 0.5;
+    const sticks = BONES.map(([a, b]) => ({ a, b, len: Math.hypot(pose[a].x - pose[b].x, pose[a].y - pose[b].y) }));
+    game.ragdolls.push({ pts, sticks, col: f.col, size: f.size, face: f.face, life: 240 });
+  }
+
+  function updateRagdoll(r) {
+    r.life--;
+    for (const k in r.pts) {
+      const p = r.pts[k];
+      const vx = (p.x - p.ox) * 0.99, vy = (p.y - p.oy) * 0.99;
+      p.ox = p.x; p.oy = p.y;
+      p.x += vx; p.y += vy + 0.5;
+    }
+    for (let it = 0; it < 5; it++) {
+      for (const s of r.sticks) {
+        const a = r.pts[s.a], b = r.pts[s.b];
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.001;
+        const diff = (d - s.len) / d / 2;
+        a.x += dx * diff; a.y += dy * diff; b.x -= dx * diff; b.y -= dy * diff;
+      }
+      for (const k in r.pts) {
+        const p = r.pts[k];
+        const floor = k === "head" ? GROUND - 7 * r.size : GROUND;
+        if (p.y > floor) { p.y = floor; const vx = p.x - p.ox; p.ox = p.x - vx * 0.7; p.oy = p.y + (p.y - p.oy) * 0.3; }
+      }
+    }
+  }
+
+  // ---------- Vuruş ----------
+  function tryHits(att, targets) {
+    const a = att.act;
+    if (!a || a.from === undefined || att.actT < a.from || att.actT > a.to) return;
+    const s = att.size;
+    for (const t of targets) {
+      if (att.hitDone.has(t) || t.dead) continue;
+      if (t.isPlayer && t.inv > 0) continue;
+      const dx = (t.x - att.x) * att.face;
+      const inFront = a.all ? Math.abs(t.x - att.x) < a.range : dx > -10 && dx < a.range * s + 10 * t.size;
+      if (!inFront || Math.abs(t.y - att.y) > 70) continue;
+      att.hitDone.add(t);
+      const dir = a.all ? Math.sign(t.x - att.x) || att.face : att.face;
+      hit(att, t, a.dmg !== undefined ? a.dmg : att.dmg, a.knock * dir, a.up);
+    }
+  }
+
+  function hit(att, t, dmg, kx, ky) {
+    t.hp -= dmg;
+    t.vx = kx; t.vy = ky; t.onGround = ky >= 0 && t.onGround;
+    t.hurt = 18; t.act = null;
+    t.face = -Math.sign(kx) || t.face;
+    const pose = computePose(t);
+    burst(pose.neck.x, pose.neck.y + 10, t.isPlayer ? "#1f3a8a" : "#c0392b", 8, 6);
+    game.hitstop = 3;
+    if (t.isPlayer) {
+      t.inv = 50; game.shake = 10; game.combo = 0;
+      floatText(t.x, t.y - 100, "-" + dmg, "#c0392b", 22, 40);
+      if (t.hp <= 0) { t.dead = true; makeRagdoll(t, kx * 1.5, ky - 6); gameOver(); }
+    } else {
+      game.combo++; game.comboT = 90;
+      game.shake = Math.max(game.shake, 4);
+      game.score += 10 * game.combo;
+      if (att.isPlayer && att.act && att.act.name !== "super") att.superM = Math.min(100, att.superM + 7);
+      if (game.combo >= 3) floatText(t.x, t.y - 110, game.combo + " kombo!", "#e67e22", 18 + Math.min(game.combo, 12), 35);
+      if (t.hp <= 0) {
+        t.dead = true;
+        const mult = 1 + Math.floor(game.combo / 5);
+        game.score += t.tp.score * mult;
+        floatText(t.x, t.y - 80, "+" + t.tp.score * mult, "#1f3a8a", 20, 45);
+        makeRagdoll(t, kx * 1.6, ky - 5);
+        const lastOne = game.queue === 0 && game.enemies.filter(e => !e.dead).length === 0;
+        if (lastOne || t.type === "iri" || game.combo >= 10) { game.slow = 50; game.shake = 12; }
+        burst(t.x, t.y - 40, t.col, 16, 8);
+        if (Math.random() < 0.14) game.pickups.push({ x: t.x, y: t.y - 30, vy: -5, life: 600 });
+      }
+    }
+  }
+
+  function gameOver() {
+    game.state = "over";
+    game.overT = 0;
+    if (game.score > best) {
+      best = game.score; game.newBest = true;
+      try { localStorage.setItem("copAdamlarRekor", best); } catch (e) {}
+    } else game.newBest = false;
+  }
+
+  // ---------- Güncelleme ----------
+  function physics(f) {
+    f.vy += 0.6;
+    f.x += f.vx; f.y += f.vy;
+    if (f.y >= GROUND) { f.y = GROUND; f.vy = 0; f.onGround = true; } else f.onGround = false;
+  }
+
+  // İzle modu: oyuncuyu yapay zekâ oynatır (video kaydı için)
+  function autopilot(p) {
+    for (const k in keys) keys[k] = false;
+    const foes = game.enemies.filter(e => !e.dead);
+    if (!foes.length) { if (Math.abs(p.x - W / 2) > 40) keys[p.x < W / 2 ? "right" : "left"] = true; return; }
+    let tgt = foes[0];
+    for (const e of foes) if (Math.abs(e.x - p.x) < Math.abs(tgt.x - p.x)) tgt = e;
+    const dx = tgt.x - p.x, dist = Math.abs(dx);
+    const near = foes.filter(e => Math.abs(e.x - p.x) < 120).length;
+    const danger = foes.some(e => e.act && e.act.name === "windup" && Math.abs(e.x - p.x) < 70 && e.actT > 12);
+    if (p.act) return;
+    if (p.superM >= 100 && near >= 2) { pressed.super = true; return; }
+    if (danger && p.onGround && Math.random() < 0.5) { pressed.jump = true; keys[dx > 0 ? "right" : "left"] = true; return; }
+    if (dist > 62 * tgt.size) { keys[dx > 0 ? "right" : "left"] = true; if (Math.random() < 0.006 && p.onGround) pressed.jump = true; return; }
+    if (Math.sign(dx) !== p.face) { keys[dx > 0 ? "right" : "left"] = true; return; }
+    if (Math.random() < 0.35) pressed[dist > 50 ? "kick" : (Math.random() < 0.6 ? "punch" : "kick")] = true;
+  }
+
+  function updatePlayer(p) {
+    if (game.auto) autopilot(p);
+    p.anim++;
+    if (p.inv > 0) p.inv--;
+    if (p.hurt > 0) { p.hurt--; p.vx *= 0.85; physics(p); p.x = clamp(p.x, 20, W - 20); return; }
+
+    const busy = p.act && p.act.name !== "punch";
+    let mv = 0;
+    if (keys.left) mv -= 1;
+    if (keys.right) mv += 1;
+    if (!p.act) { if (mv) p.face = mv; }
+    const targetVx = busy && p.onGround ? 0 : mv * p.speed;
+    p.vx += (targetVx - p.vx) * (p.onGround ? 0.35 : 0.12);
+
+    if (pressed.jump && p.onGround && !p.act) { p.vy = -12; p.onGround = false; }
+    if (!p.act) {
+      if (pressed.super && p.superM >= 100) { startAct(p, "super"); p.superM = 0; game.shake = 8; floatText(p.x, p.y - 120, "SÜPER!", "#c0392b", 30, 50); }
+      else if (pressed.kick) startAct(p, "kick");
+      else if (pressed.punch) startAct(p, "punch");
+    }
+
+    if (p.act) {
+      p.actT++;
+      if (p.act.name === "kick" && p.actT === ACTS.kick.from) p.vx += p.face * 2;
+      tryHits(p, game.enemies);
+      if (p.act.name === "super" && p.actT % 6 === 0) burst(p.x + rand(-60, 60), p.y - rand(20, 70), "#e67e22", 2, 3);
+      if (p.actT >= p.act.dur) p.act = null;
+    }
+    physics(p);
+    p.x = clamp(p.x, 20, W - 20);
+
+    for (const it of game.pickups) {
+      if (!it.taken && Math.abs(it.x - p.x) < 28 && Math.abs(it.y - (p.y - 30)) < 50) {
+        it.taken = true; p.hp = Math.min(p.maxHp, p.hp + 25);
+        floatText(p.x, p.y - 110, "+25 can", "#27ae60", 20, 45);
+      }
+    }
+  }
+
+  function updateEnemy(e) {
+    const p = game.player;
+    e.anim++;
+    if (e.hurt > 0) { e.hurt--; e.vx *= 0.88; physics(e); return; }
+
+    const dx = p.x - e.x, dist = Math.abs(dx);
+    if (!e.act) e.face = Math.sign(dx) || e.face;
+    const reach = 46 * e.size;
+    if (e.cd > 0) e.cd--;
+
+    if (e.act) {
+      e.vx *= 0.7;
+      e.actT++;
+      if (e.act.name !== "windup") tryHits(e, [p]);
+      if (e.actT >= e.act.dur) {
+        const nx = e.act.next;
+        e.act = null;
+        if (nx) startAct(e, nx); else e.cd = rand(50, 110) / Math.min(2, 1 + game.wave * 0.08);
+      }
+    } else if (dist > reach || p.dead) {
+      let want = Math.sign(dx) * e.speed;
+      // birbirine fazla yaklaşma
+      for (const o of game.enemies) {
+        if (o === e || o.dead) continue;
+        const d = e.x - o.x;
+        if (Math.abs(d) < 30 * e.size && Math.sign(d) !== Math.sign(dx)) want *= 0.3;
+      }
+      if (p.dead) want = 0;
+      e.vx += (want - e.vx) * 0.2;
+    } else {
+      e.vx *= 0.6;
+      if (e.cd <= 0) startAct(e, "windup");
+    }
+    physics(e);
+  }
+
+  function update() {
+    game.t++;
+    if (game.state !== "play") {
+      if (game.state === "over") { game.overT++; game.ragdolls.forEach(updateRagdoll); game.enemies.forEach(e => { e.anim++; e.vx *= 0.8; physics(e); }); }
+      if (pressed.start && (game.state === "title" || game.overT > 40)) newGame();
+      if (game.auto && (game.state === "title" ? game.t > 60 : game.overT > 240)) newGame();
+      return;
+    }
+    if (game.paused) return;
+    if (game.hitstop > 0) { game.hitstop--; return; }
+    if (game.slow > 0 && game.slow-- % 3 !== 0) return; // ağır çekim
+
+    updatePlayer(game.player);
+    game.enemies.forEach(updateEnemy);
+    game.enemies = game.enemies.filter(e => !e.dead);
+    game.ragdolls.forEach(updateRagdoll);
+    game.ragdolls = game.ragdolls.filter(r => r.life > 0);
+
+    if (game.comboT > 0 && --game.comboT === 0) game.combo = 0;
+
+    // dalgalar
+    if (game.queue > 0) {
+      const maxOn = 3 + Math.floor(game.wave / 2);
+      if (--game.spawnT <= 0 && game.enemies.length < maxOn) {
+        spawnEnemy(); game.queue--; game.spawnT = Math.max(25, 70 - game.wave * 4);
+      }
+    } else if (game.enemies.length === 0) {
+      if (game.waveT === 0) {
+        game.waveT = 100;
+        if (game.wave > 0) { game.score += 500 * game.wave; floatText(W / 2, 250, "Dalga temizlendi! +" + 500 * game.wave, "#27ae60", 26, 80); }
+      }
+      if (--game.waveT === 0) nextWave();
+    }
+
+    for (const it of game.pickups) {
+      it.vy += 0.4; it.y += it.vy;
+      if (it.y > GROUND - 14) { it.y = GROUND - 14; it.vy = 0; }
+      it.life--;
+    }
+    game.pickups = game.pickups.filter(i => !i.taken && i.life > 0);
+    for (const pt of game.particles) { pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.3; pt.life--; }
+    game.particles = game.particles.filter(p => p.life > 0);
+    for (const t of game.texts) { t.y -= 0.7; t.life--; }
+    game.texts = game.texts.filter(t => t.life > 0);
+    if (game.shake > 0) game.shake *= 0.85;
+    if (game.shake < 0.3) game.shake = 0;
+  }
+
+  // ---------- Çizim ----------
+  function drawPaper() {
+    ctx.fillStyle = "#f7f3e8"; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(70,120,200,.18)"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let y = 40; y < H; y += 28) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(200,60,60,.35)";
+    ctx.beginPath(); ctx.moveTo(70, 0); ctx.lineTo(70, H); ctx.stroke();
+    // zemin: elle çizilmiş çizgi
+    ctx.strokeStyle = "#2b2b2b"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(0, GROUND + 2);
+    for (let x = 0; x <= W; x += 24) ctx.lineTo(x, GROUND + 2 + Math.sin(x * 0.07) * 1.5);
+    ctx.stroke();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(43,43,43,.35)";
+    ctx.beginPath();
+    for (let x = 10; x < W; x += 34) { ctx.moveTo(x, GROUND + 12); ctx.lineTo(x + 14, GROUND + 22); }
+    ctx.stroke();
+  }
+
+  function drawShadow(x, size) {
+    ctx.fillStyle = "rgba(0,0,0,.12)";
+    ctx.beginPath(); ctx.ellipse(x, GROUND + 3, 20 * size, 4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawFighter(f) {
+    drawShadow(f.x, f.size);
+    const pose = computePose(f);
+    let alpha = 1;
+    if (f.isPlayer && f.inv > 0 && Math.floor(f.inv / 4) % 2) alpha = 0.35;
+    let col = f.col;
+    if (f.act && f.act.name === "windup") col = Math.floor(f.actT / 3) % 2 ? "#e67e22" : f.col;
+    if (f.hurt > 12) col = "#e74c3c";
+    drawFigure(pose, col, f.size, alpha, f.face, f.isPlayer ? (hx, hy) => {
+      // oyuncunun bandanası
+      ctx.strokeStyle = "#c0392b"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(hx - 10, hy - 5); ctx.lineTo(hx + 10, hy - 5); ctx.stroke();
+      const w = Math.sin(game.t * 0.3) * 3;
+      ctx.beginPath(); ctx.moveTo(hx - 10 * f.face, hy - 5); ctx.lineTo(hx - 20 * f.face, hy - 8 + w);
+      ctx.moveTo(hx - 10 * f.face, hy - 5); ctx.lineTo(hx - 18 * f.face, hy + w); ctx.stroke();
+    } : null);
+    if (f.act && f.act.name === "super") {
+      ctx.strokeStyle = "rgba(230,126,34,.5)"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(f.x, f.y - 40, 70 + Math.sin(f.actT) * 8, 30, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (!f.isPlayer && f.hp < f.maxHp) {
+      const w = 36 * f.size;
+      ctx.fillStyle = "rgba(0,0,0,.15)"; ctx.fillRect(f.x - w / 2, f.y - 100 * f.size, w, 4);
+      ctx.fillStyle = "#c0392b"; ctx.fillRect(f.x - w / 2, f.y - 100 * f.size, w * Math.max(0, f.hp / f.maxHp), 4);
+    }
+  }
+
+  function drawRagdoll(r) {
+    const pose = {};
+    for (const k in r.pts) pose[k] = r.pts[k];
+    drawFigure(pose, r.col, r.size, Math.min(1, r.life / 60), r.face);
+  }
+
+  function drawHeart(x, y, s) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.fillStyle = "#e74c3c"; ctx.strokeStyle = "#8e1b10"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, 6);
+    ctx.bezierCurveTo(-14, -4, -8, -14, 0, -6);
+    ctx.bezierCurveTo(8, -14, 14, -4, 0, 6);
+    ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+
+  function bar(x, y, w, h, v, col, label) {
+    ctx.strokeStyle = "#2b2b2b"; ctx.lineWidth = 2;
+    ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = col; ctx.fillRect(x, y, w * clamp(v, 0, 1), h);
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = "#2b2b2b"; ctx.font = "bold 14px inherit";
+    ctx.font = "bold 14px 'Comic Sans MS', 'Segoe Print', sans-serif";
+    ctx.textAlign = "left"; ctx.fillText(label, x, y - 5);
+  }
+
+  function text(str, x, y, size, col, align) {
+    ctx.font = "bold " + size + "px 'Comic Sans MS', 'Segoe Print', 'Chalkboard SE', sans-serif";
+    ctx.textAlign = align || "center"; ctx.fillStyle = col || "#2b2b2b";
+    ctx.fillText(str, x, y);
+  }
+
+  function drawHUD() {
+    const p = game.player;
+    bar(90, 34, 200, 16, p.hp / p.maxHp, "#27ae60", "Can");
+    const full = p.superM >= 100;
+    bar(90, 74, 200, 12, p.superM / 100, full && game.t % 20 < 10 ? "#f39c12" : "#e67e22", full ? "Süper hazır! (L)" : "Süper");
+    text("Puan: " + game.score, W - 24, 46, 24, "#1f3a8a", "right");
+    text("Dalga " + game.wave + "   Rekor: " + best, W - 24, 74, 16, "#555", "right");
+    if (game.auto) text("İZLE MODU (I)", W / 2, 24, 14, "rgba(43,43,43,.5)");
+    if (game.combo >= 2) text(game.combo + "x kombo", W / 2, 50, 22 + Math.min(game.combo, 15), "#e67e22");
+  }
+
+  function drawControlsHelp(y) {
+    const touch = document.body.classList.contains("touch");
+    if (touch) {
+      text("Alttaki düğmelerle yürü, zıpla, yumruk ve tekme at", W / 2, y, 18, "#555");
+    } else {
+      text("← → / A D: yürü    ↑ / W / Boşluk: zıpla", W / 2, y, 18, "#555");
+      text("J: yumruk    K: tekme    L: süper hamle    P: duraklat", W / 2, y + 28, 18, "#555");
+      text("I: izle modu (oyun kendi kendine oynar, kayıt için)", W / 2, y + 56, 18, "#c0392b");
+    }
+  }
+
+  function render() {
+    ctx.save();
+    if (game.shake) ctx.translate(rand(-game.shake, game.shake), rand(-game.shake, game.shake));
+    drawPaper();
+
+    if (game.state === "title") {
+      // tanıtım: iki çöp adam karşılıklı
+      const demo = makeFighter(W / 2 - 80, true); demo.anim = game.t; demo.face = 1;
+      const ph = game.t % 90;
+      if (ph < 18) { demo.act = ACTS.punch; demo.actT = ph; }
+      const foe = makeFighter(W / 2 + 80, false, "normal"); foe.face = -1; foe.anim = game.t;
+      if (ph >= 6 && ph < 24) foe.hurt = 10;
+      drawFighter(demo); drawFighter(foe);
+      text("ÇÖP ADAMLAR", W / 2, 130, 64, "#1f3a8a");
+      text("Defter Kavgası", W / 2, 172, 28, "#c0392b");
+      drawControlsHelp(225);
+      if (game.t % 60 < 40) text(document.body.classList.contains("touch") ? "Başlamak için dokun" : "Başlamak için Enter'a bas", W / 2, 520, 22, "#2b2b2b");
+      ctx.restore();
+      return;
+    }
+
+    for (const it of game.pickups) {
+      if (it.life > 120 || game.t % 10 < 6) drawHeart(it.x, it.y + Math.sin(game.t * 0.1) * 3, 1.1);
+    }
+    game.ragdolls.forEach(drawRagdoll);
+    game.enemies.forEach(drawFighter);
+    if (!game.player.dead) drawFighter(game.player);
+
+    ctx.lineCap = "round";
+    for (const pt of game.particles) {
+      ctx.strokeStyle = pt.col; ctx.globalAlpha = Math.min(1, pt.life / 15); ctx.lineWidth = 2.5;
+      const m = Math.hypot(pt.vx, pt.vy) || 1;
+      ctx.beginPath(); ctx.moveTo(pt.x, pt.y); ctx.lineTo(pt.x - pt.vx / m * pt.len, pt.y - pt.vy / m * pt.len); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    for (const t of game.texts) {
+      ctx.globalAlpha = Math.min(1, t.life / 20);
+      text(t.str, t.x, t.y, t.size, t.col);
+    }
+    ctx.globalAlpha = 1;
+    drawHUD();
+
+    if (game.paused) {
+      ctx.fillStyle = "rgba(247,243,232,.8)"; ctx.fillRect(0, 0, W, H);
+      text("Duraklatıldı", W / 2, H / 2, 48, "#1f3a8a");
+      text("Devam etmek için P'ye bas", W / 2, H / 2 + 40, 20, "#555");
+    }
+    if (game.state === "over") {
+      ctx.fillStyle = "rgba(247,243,232," + Math.min(0.8, game.overT / 60) + ")"; ctx.fillRect(0, 0, W, H);
+      if (game.overT > 20) {
+        text("Silindin!", W / 2, 190, 64, "#c0392b");
+        text("Puan: " + game.score + "    Dalga: " + game.wave, W / 2, 250, 28, "#1f3a8a");
+        text(game.newBest ? "Yeni rekor!" : "Rekor: " + best, W / 2, 290, 22, game.newBest ? "#e67e22" : "#555");
+        if (game.overT > 40 && game.t % 60 < 40) text(document.body.classList.contains("touch") ? "Tekrar oynamak için dokun" : "Tekrar oynamak için Enter'a bas", W / 2, 360, 22, "#2b2b2b");
+      }
+    }
+    ctx.restore();
+  }
+
+  // ---------- Döngü ----------
+  let last = performance.now(), acc = 0;
+  const STEP = 1000 / 60;
+  function frame(now) {
+    acc += Math.min(100, now - last); last = now;
+    while (acc >= STEP) {
+      update();
+      for (const k in pressed) delete pressed[k];
+      acc -= STEP;
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // test ve hata ayıklama için
+  window.__copAdamlar = { game, keys, setKey };
+})();
+</script>
+</body>
+</html>

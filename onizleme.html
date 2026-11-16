@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Kurum Deneme Takvimi (Önizleme)</title>
+<title>Bizden Yayıncılık B2B (Önizleme)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
@@ -204,6 +204,13 @@ details.panel[open] summary::after{content:" −"}
 .cal-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media (max-width:620px){.cal-day{min-height:64px;padding:4px}.chipd{font-size:10px;padding:2px 4px}.chipd .ad{display:none}.cal-dow{font-size:10px}}
 
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.logo-box{background:#fff;border-radius:10px;padding:5px 9px;display:inline-flex;align-items:center}
+.logo-box img{height:30px;width:auto;display:block}
+.brand-ad{font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:-.01em}
+.brand-ad b{font-weight:800;color:#ffcf5a;margin-left:2px}
+.logo-login{height:52px;width:auto;display:block;margin-bottom:10px}
+
 .demo{background:#fff6d6;color:#5a4300;font-size:13.5px;padding:8px 16px;text-align:center;border-bottom:1px solid #f0d77a}
 .demo b{font-family:var(--f-mono)}
 </style>
@@ -215,7 +222,8 @@ details.panel[open] summary::after{content:" −"}
 <div id="v-login" class="login gut" hidden>
   <section class="panel">
     <div>
-      <h1>Kurum Deneme Takvimi</h1>
+      <img class="logo-login" src="logo.png" alt="Bizden Yayıncılık" onerror="this.hidden=true">
+      <h1>Bizden Yayıncılık B2B</h1>
       <p class="hint">Deneme siparişi vermek ve takviminizi görmek için giriş yapın.</p>
     </div>
     <div class="tabs" role="tablist">
@@ -238,9 +246,10 @@ details.panel[open] summary::after{content:" −"}
   <header class="band gut">
     <div class="in">
       <div>
+        <div class="brand"><span class="logo-box"><img src="logo.png" alt="Bizden Yayıncılık" onerror="this.parentNode.hidden=true"></span><span class="brand-ad">Bizden Yayıncılık <b>B2B</b></span></div>
         <div class="who"><span id="who"></span><button id="cikis">Çıkış</button></div>
         <div class="today" id="today"></div>
-        <h1 id="baslik">Kurum Deneme Takvimi</h1>
+        <h1 id="baslik">Deneme Sipariş Paneli</h1>
         <p id="altbaslik"></p>
       </div>
       <div class="sum" id="sum"></div>
@@ -380,7 +389,7 @@ channel(){const c={on(){return c},subscribe(){return c}};return c},removeChannel
 
 </script>
 <script>
-// Kurum Deneme Takvimi — tek sayfalık uygulama (Supabase)
+// Bizden Yayıncılık B2B — deneme sipariş ve takvim uygulaması (Supabase)
 const AY=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
 const AYTAM=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const GUN=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];

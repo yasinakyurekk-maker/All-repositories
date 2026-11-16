@@ -1,4 +1,4 @@
-// Kurum Deneme Takvimi — tek sayfalık uygulama (Supabase)
+// Bizden Yayıncılık B2B — deneme sipariş ve takvim uygulaması (Supabase)
 const AY=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
 const AYTAM=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const GUN=["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];

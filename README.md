@@ -1,4 +1,6 @@
-# Kurum Deneme Takvimi
+# Bizden Yayıncılık B2B
+
+Deneme sipariş ve takvim sistemi.
 
 Kurumların deneme siparişi verdiği, yöneticinin tüm kurumların denemelerini tek takvimde gördüğü web sitesi.
 
@@ -27,3 +29,6 @@ vercel.com > **Add New > Project** > bu GitHub deposunu seçin > **Deploy**. Aya
 - **Kurumlar** bölümünden kurumları ekleyin. Her kurum, verdiğiniz e-postayla aynı şekilde "İlk kez giriş" yapar.
 
 Başka yönetici eklemek için Supabase'de **Table Editor > yoneticiler** tablosuna e-postasını küçük harfle ekleyin.
+
+## Logo
+Logoyu `logo.png` adıyla deponun ana klasörüne koyun. Dosya yoksa site logosuz, yalnızca adla görünür.

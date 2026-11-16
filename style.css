@@ -194,3 +194,10 @@ details.panel[open] summary::after{content:" −"}
 .cal-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 .cal-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media (max-width:620px){.cal-day{min-height:64px;padding:4px}.chipd{font-size:10px;padding:2px 4px}.chipd .ad{display:none}.cal-dow{font-size:10px}}
+
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.logo-box{background:#fff;border-radius:10px;padding:5px 9px;display:inline-flex;align-items:center}
+.logo-box img{height:30px;width:auto;display:block}
+.brand-ad{font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:-.01em}
+.brand-ad b{font-weight:800;color:#ffcf5a;margin-left:2px}
+.logo-login{height:52px;width:auto;display:block;margin-bottom:10px}

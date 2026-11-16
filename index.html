@@ -47,13 +47,59 @@
       <div class="sum" id="sum"></div>
     </div>
     <nav class="in nav" aria-label="Bölümler">
-      <button type="button" data-sekme="deneme" aria-current="page">Denemeler</button>
+      <button type="button" data-sekme="takvim" aria-current="page">Deneme takvimi</button>
+      <button type="button" data-sekme="deneme">Denemeler</button>
       <button type="button" data-sekme="siparis">Ürün siparişleri <span class="badge" id="nav-sip"></span></button>
       <button type="button" data-sekme="urun" id="nav-urun" hidden>Ürün kataloğu</button>
     </nav>
   </header>
 
-  <div class="main gut" id="v-deneme">
+  <!-- YAYIN TAKVİMİ -->
+  <div class="main gut" id="v-takvim">
+    <div class="in cols">
+      <div class="stack">
+        <section class="panel" aria-labelledby="tsinif-h">
+          <div class="kurum-head">
+            <div><div class="label">Sınıf takvimleri</div><h3 id="tsinif-h">Tüm sınıfların takvimi</h3></div>
+            <div class="field" style="width:auto"><label for="tyil">Eğitim yılı</label><select id="tyil" style="width:auto"></select></div>
+          </div>
+          <div class="filters" id="tsinif" aria-label="Sınıf seçimi"></div>
+          <div class="tabs gorunum" role="tablist" aria-label="Görünüm" style="justify-self:start"><button type="button" id="tg-liste" role="tab" aria-selected="true">Liste</button><button type="button" id="tg-takvim" role="tab" aria-selected="false">Aylık takvim</button></div>
+          <div class="list" id="tlist"></div>
+          <div class="cal" id="tcal" hidden></div>
+        </section>
+      </div>
+      <aside>
+        <section class="panel" id="tp-kurum" aria-labelledby="secim-h">
+          <h2 id="secim-h">Seçtiğim denemeler</h2>
+          <div class="secim" id="secim"></div>
+          <div class="two">
+            <div class="field"><label for="tum-ogr">Tümüne öğrenci sayısı</label><input id="tum-ogr" type="number" min="0" inputmode="numeric" placeholder="Örn. 35"></div>
+            <div class="field"><label for="tnot">Not</label><input id="tnot" placeholder="İsteğe bağlı"></div>
+          </div>
+          <button class="primary" type="button" id="tsiparis" disabled>Deneme seçin</button>
+          <div class="msg" id="tmsg" role="status"></div>
+        </section>
+        <section class="panel" id="tp-admin" hidden aria-labelledby="tf-h">
+          <h2 id="tf-h">Takvime deneme yaz</h2>
+          <form id="f-takvim" autocomplete="off">
+            <div class="field"><label for="t-ad">Deneme adı</label><input id="t-ad" required placeholder="Örn. Türkiye Geneli LGS Deneme 3"></div>
+            <div class="two">
+              <div class="field"><label for="t-tarih">Uygulama tarihi</label><input id="t-tarih" type="date" required></div>
+              <div class="field"><label for="t-tur">Tür</label><select id="t-tur"><option value="">Seçin</option><option>LGS</option><option>TYT</option><option>AYT</option><option>TYT-AYT</option><option>Ara sınıf</option><option>Kazanım</option><option>Diğer</option></select></div>
+            </div>
+            <div class="field"><span class="flabel">Sınıflar</span><div class="sboxes" id="tsiniflar"></div><p class="hint">Birden çok sınıf seçerseniz her sınıfın takvimine ayrı ayrı eklenir.</p></div>
+            <div class="field"><label for="t-acik">Açıklama</label><input id="t-acik" placeholder="İsteğe bağlı, örn. Sayısal-sözel ayrı kitapçık"></div>
+            <label class="row" style="gap:8px;font-size:14px"><input id="t-aktif" type="checkbox" checked style="width:auto"> Yayında (kurumlar görebilsin)</label>
+            <div class="row"><button class="primary" type="submit" id="t-btn">Takvime ekle</button><button type="button" id="t-iptal" hidden>Vazgeç</button></div>
+            <div class="msg" id="t-msg" role="status"></div>
+          </form>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div class="main gut" id="v-deneme" hidden>
     <div class="in cols">
       <div class="stack">
         <!-- yönetici: yeni siparişler -->

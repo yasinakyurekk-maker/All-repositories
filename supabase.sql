@@ -120,6 +120,28 @@ do $$ begin
   alter publication supabase_realtime add table siparisler;
 exception when others then null; end $$;
 
+-- ---------- YAYIN TAKVİMİ ----------
+-- Yayıncının denemeleri; kurumlar buradan tik atarak sipariş verir.
+create table if not exists takvim (
+  id uuid primary key default gen_random_uuid(),
+  ad text not null,
+  sinif text not null,
+  tarih date not null,
+  tur text,
+  aciklama text,
+  aktif boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index if not exists takvim_tarih on takvim(tarih);
+alter table denemeler add column if not exists takvim_id uuid references takvim(id) on delete set null;
+create unique index if not exists denemeler_kurum_takvim on denemeler(kurum_id, takvim_id) where takvim_id is not null;
+
+alter table takvim enable row level security;
+drop policy if exists t_oku on takvim;
+create policy t_oku on takvim for select to authenticated using (aktif or is_admin());
+drop policy if exists t_yaz on takvim;
+create policy t_yaz on takvim for all to authenticated using (is_admin()) with check (is_admin());
+
 -- Yeni kayıtlar yönetici ekranına anında düşsün
 do $$ begin
   alter publication supabase_realtime add table denemeler;

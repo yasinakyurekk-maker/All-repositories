@@ -249,3 +249,29 @@ details.panel[open] summary::after{content:" −"}
 .urow.pasif{opacity:.55}
 .sum b.tut{font-size:18px;padding-block:4px}
 @media (max-width:620px){.sum b.tut{font-size:12.5px;padding-block:5px;overflow-wrap:anywhere}}
+
+/* yayın takvimi */
+.titem.kur{grid-template-columns:30px 58px minmax(0,1fr) auto}
+.tik{display:grid;place-items:center}
+.tik input{width:22px;height:22px;accent-color:var(--accent);cursor:pointer}
+.tikok{width:24px;height:24px;border-radius:7px;background:var(--ok);color:var(--surface);display:grid;place-items:center;font-weight:700;font-size:14px}
+.titem.secili{border-color:var(--accent);background:var(--accent-soft)}
+.titem.alindi{border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+.titem.pasif{opacity:.55}
+.chipd.bos{background:var(--field);border:1px dashed var(--line)}
+.chipd.bos b{color:var(--muted)}
+.secim{display:grid;gap:6px}
+.secrow{display:grid;grid-template-columns:minmax(0,1fr) 84px auto;gap:6px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px}
+.secrow strong{display:block;font-size:13.5px;overflow-wrap:anywhere}
+.secrow span{font-size:12px;color:var(--muted)}
+.secrow input{padding:6px 8px;font-size:13.5px}
+.flabel{font-size:13px;font-weight:600}
+.sboxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
+.sbox{display:flex;align-items:center;gap:5px;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--field);cursor:pointer}
+.sbox input{width:auto;margin:0}
+.sbox:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border-radius:999px;padding:6px 13px;font-size:14px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.chip .n{font-family:var(--f-mono);font-size:12px;opacity:.75;margin-left:5px}
+@media (max-width:520px){.titem.kur{grid-template-columns:28px 52px minmax(0,1fr)}.titem.kur .right{grid-column:3;justify-self:start;justify-content:flex-start}}

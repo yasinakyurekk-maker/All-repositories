@@ -769,9 +769,7 @@ $("excel").onclick=()=>{
   const rows=[["Kurum","Tarih","Gün","Deneme","Sınıf","Öğrenci","Not","Durum"]].concat(r.map(x=>{const p=parts(x.tarih);
     return [kAd(x.kurum_id),String(p.d).padStart(2,"0")+"."+String(p.m).padStart(2,"0")+"."+p.y,p.gun,x.ad||"",x.sinif||"",x.ogrenci??"",x.notlar||"",DURUM[x.durum]]}));
   const blob=new Blob(["\ufeff"+rows.map(a=>a.map(q).join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-  a.download="deneme-takvimi-"+(S.secili?kAd(S.secili).replace(/\s+/g,"-"):"tum-kurumlar")+"-"+S.yil+"-"+(S.yil+1)+".csv";
-  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+  dosyaKaydet("deneme-takvimi-"+(S.secili?kAd(S.secili).replace(/ı/g,"i").replace(/İ/g,"I").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-"):"tum-kurumlar")+"-"+S.yil+"-"+(S.yil+1)+".csv",blob,$("msg"))};
 $("ksec").onchange=e=>{S.secili=e.target.value;S.confirm=null;render()};
 $("yil").onchange=e=>{S.yil=Number(e.target.value);S.ay=null;render()};
 
@@ -786,6 +784,13 @@ $("f-kurum").addEventListener("submit",async e=>{
   if(error){flash($("k-msg"),hataMetni(error),true);return}
   flash($("k-msg"),(kEdit?"Güncellendi: ":"Eklendi: ")+body.ad+". Kurum "+body.email+" ile \"İlk kez giriş\" yapabilir.");kSifirla();yukle();
 });
+
+// ---------- dosya indirme (Claude önizlemesinde izinli indirme, sitede normal indirme) ----------
+async function dosyaKaydet(ad,blob,msgEl){
+  try{const dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null;
+    if(dl){await dl.save({filename:ad,data:blob});return}}
+  catch(e){if(e&&e.code==="declined")return;if(msgEl)flash(msgEl,"Dosya indirilemedi ("+(e&&e.code||"hata")+").",true);return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=ad;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 
 // ---------- Excel'den toplu yükleme ----------
 let yuklenecek=[];
@@ -840,9 +845,10 @@ $("sablon").onclick=()=>{
   const admin=S.rol==="admin";const k=(S.kurumlar[0]||{}).ad||"Atatürk Ortaokulu";
   const rows=admin?[["Kurum","Tarih","Deneme","Sınıf","Öğrenci","Not"],[k,"15.12.2026","LGS Deneme 4","8. sınıf",35,"Sabah 09:30"]]
     :[["Tarih","Deneme","Sınıf","Öğrenci","Not"],["15.12.2026","LGS Deneme 4","8. sınıf",35,"Sabah 09:30"]];
-  if(window.XLSX){const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=rows[0].map(()=>({wch:18}));XLSX.utils.book_append_sheet(wb,ws,"Denemeler");XLSX.writeFile(wb,"deneme-yukleme-sablonu.xlsx");return}
-  const blob=new Blob(["\ufeff"+rows.map(a=>a.join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="deneme-yukleme-sablonu.csv";document.body.appendChild(a);a.click();a.remove()};
+  if(window.XLSX){const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=rows[0].map(()=>({wch:18}));XLSX.utils.book_append_sheet(wb,ws,"Denemeler");
+    const buf=XLSX.write(wb,{type:"array",bookType:"xlsx"});
+    dosyaKaydet("deneme-yukleme-sablonu.xlsx",new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),$("yukle-msg"));return}
+  dosyaKaydet("deneme-yukleme-sablonu.csv",new Blob(["\ufeff"+rows.map(a=>a.join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"}),$("yukle-msg"))};
 
 // ---------- sekmeler ----------
 function renderSekme(){

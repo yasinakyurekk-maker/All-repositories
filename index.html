@@ -71,6 +71,12 @@
             <div class="stats" id="stats"></div>
           </div>
           <div class="strip" id="strip" aria-label="Aylara göre deneme sayısı"></div>
+          <div class="tools">
+            <div class="field" style="flex:1 1 200px"><label for="ara">Ara</label><input id="ara" type="search" placeholder="Deneme adı, sınıf, kurum…"></div>
+            <div class="field" style="flex:0 1 170px"><label for="dsec">Durum</label><select id="dsec"><option value="">Tümü</option><option value="bekliyor">Onay bekliyor</option><option value="onaylandi">Onaylandı</option><option value="iptal">İptal</option></select></div>
+            <div class="field" style="flex:0 1 170px"><label for="zsec">Zaman</label><select id="zsec"><option value="">Tüm yıl</option><option value="gelecek">Yaklaşanlar</option><option value="gecmis">Yapılanlar</option></select></div>
+            <button type="button" id="excel">Excel'e aktar</button>
+          </div>
           <div class="list" id="list"></div>
         </section>
 
@@ -82,6 +88,7 @@
               <div class="field"><label for="k-ad">Kurum adı</label><input id="k-ad" required placeholder="Atatürk Ortaokulu"></div>
               <div class="field"><label for="k-tel">Telefon</label><input id="k-tel" placeholder="İsteğe bağlı"></div>
             </div>
+            <div class="field"><label for="k-yetkili">Yetkili kişi</label><input id="k-yetkili" placeholder="İsteğe bağlı, örn. Ayşe Yılmaz (müdür yrd.)"></div>
             <div class="field"><label for="k-email">Giriş e-postası</label><input id="k-email" type="email" required placeholder="kurum@ornek.com"></div>
             <p class="hint">Kurum bu e-postayla "İlk kez giriş" sekmesinden kendi şifresini belirler.</p>
             <div class="row"><button class="primary" type="submit" id="k-btn">Kurum ekle</button><button type="button" id="k-iptal" hidden>Vazgeç</button></div>

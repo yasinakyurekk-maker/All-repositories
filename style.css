@@ -162,3 +162,10 @@ details.panel summary::after{content:" +";color:var(--muted)}
 details.panel[open] summary::after{content:" −"}
 .badge{display:inline-block;min-width:22px;padding:0 7px;border-radius:999px;background:var(--warn);color:var(--surface);font-size:12px;font-family:var(--f-mono);text-align:center;margin-left:6px;vertical-align:middle}
 .pick:has(#ksec-wrap[hidden]){grid-template-columns:minmax(0,220px)}
+
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.tools > button{height:42px}
+.krow .kst{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.krow .kst span{font-size:12px;background:var(--field);border-radius:999px;padding:2px 9px;color:var(--muted)}
+.krow .kst span.w{background:var(--warn-soft);color:var(--warn)}
+.sonuc{font-size:13px;color:var(--muted)}

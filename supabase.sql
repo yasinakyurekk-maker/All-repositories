@@ -11,6 +11,7 @@ create table if not exists kurumlar (
   ad text not null,
   email text not null unique check (email = lower(email)),
   telefon text,
+  yetkili text,
   created_at timestamptz not null default now()
 );
 
@@ -25,6 +26,7 @@ create table if not exists denemeler (
   durum text not null default 'bekliyor' check (durum in ('bekliyor','onaylandi','iptal')),
   created_at timestamptz not null default now()
 );
+alter table kurumlar add column if not exists yetkili text;
 create index if not exists denemeler_tarih on denemeler(tarih);
 
 -- Giriş yapan kişinin e-postası

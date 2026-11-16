@@ -220,6 +220,45 @@ details.panel[open] summary::after{content:" −"}
 .tablo tr.hata td{background:var(--crit-soft)}
 .tablo td.e{color:var(--crit);white-space:normal;min-width:140px}
 
+/* sekmeler */
+.band .nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:22px;justify-content:flex-start;align-items:center}
+.nav button{background:transparent;border:1px solid rgba(255,255,255,.18);color:var(--band-muted);padding:8px 16px;border-radius:999px;font-size:14px}
+.nav button:hover{color:var(--band-fg);border-color:rgba(255,255,255,.35)}
+.nav button[aria-current="page"]{background:var(--band-fg);color:var(--band);border-color:var(--band-fg)}
+.nav .badge:empty{display:none}
+/* ürün seçimi */
+.urunsec{display:grid;gap:4px;max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px}
+.ukat{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 6px 2px}
+.urow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px;border-radius:8px}
+.urow.sec{background:var(--accent-soft)}
+.urow strong{display:block;font-size:14px;overflow-wrap:anywhere}
+.urow span{font-size:12px;color:var(--muted)}
+.qty{display:inline-grid;grid-template-columns:30px 48px 30px;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.qty button{border:0;border-radius:0;padding:5px 0;background:var(--field);font-size:16px;line-height:1}
+.qty input{border:0;border-radius:0;padding:5px 2px;text-align:center;background:transparent;-moz-appearance:textfield}
+.qty input::-webkit-outer-spin-button,.qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.sepet{display:grid;gap:4px;font-size:13.5px}
+.sepet .sat{display:flex;justify-content:space-between;gap:8px}
+.sepet .top{border-top:1px solid var(--line);padding-top:6px;font-weight:700}
+.sepet:empty{display:none}
+/* sipariş listesi */
+.slist{display:grid;gap:10px}
+.scard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.scard.iptal{opacity:.6}
+.shead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.shead strong{font-size:15px}
+.shead .meta{font-size:13px;color:var(--muted)}
+.skal{display:grid;gap:2px;font-size:13.5px;background:var(--field);border-radius:8px;padding:8px 10px}
+.skal div{display:flex;justify-content:space-between;gap:10px}
+.skal div span:last-child{font-family:var(--f-mono);white-space:nowrap}
+.sfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.sfoot select{width:auto;padding:6px 10px;font-size:13.5px}
+.pill.hazirlaniyor{background:var(--accent-soft);color:var(--accent)}
+.pill.teslim{background:var(--ok-soft);color:var(--ok)}
+.urow.pasif{opacity:.55}
+.sum b.tut{font-size:18px;padding-block:4px}
+@media (max-width:620px){.sum b.tut{font-size:12.5px;padding-block:5px;overflow-wrap:anywhere}}
+
 .demo{background:#fff6d6;color:#5a4300;font-size:13.5px;padding:8px 16px;text-align:center;border-bottom:1px solid #f0d77a}
 .demo b{font-family:var(--f-mono)}
 </style>
@@ -263,9 +302,14 @@ details.panel[open] summary::after{content:" −"}
       </div>
       <div class="sum" id="sum"></div>
     </div>
+    <nav class="in nav" aria-label="Bölümler">
+      <button type="button" data-sekme="deneme" aria-current="page">Denemeler</button>
+      <button type="button" data-sekme="siparis">Ürün siparişleri <span class="badge" id="nav-sip"></span></button>
+      <button type="button" data-sekme="urun" id="nav-urun" hidden>Ürün kataloğu</button>
+    </nav>
   </header>
 
-  <div class="main gut">
+  <div class="main gut" id="v-deneme">
     <div class="in cols">
       <div class="stack">
         <!-- yönetici: yeni siparişler -->
@@ -357,6 +401,67 @@ details.panel[open] summary::after{content:" −"}
       </aside>
     </div>
   </div>
+
+  <!-- ÜRÜN SİPARİŞLERİ -->
+  <div class="main gut" id="v-siparis" hidden>
+    <div class="in cols">
+      <div class="stack">
+        <section class="panel" aria-labelledby="s-h">
+          <h2 id="s-h">Ürün siparişleri</h2>
+          <div class="tools">
+            <div class="field" id="sk-wrap" style="flex:1 1 200px"><label for="s-kurum">Kurum</label><select id="s-kurum"></select></div>
+            <div class="field" style="flex:0 1 190px"><label for="s-durum">Durum</label><select id="s-durum">
+              <option value="">Tümü</option><option value="bekliyor">Onay bekliyor</option><option value="onaylandi">Onaylandı</option>
+              <option value="hazirlaniyor">Hazırlanıyor</option><option value="teslim">Teslim edildi</option><option value="iptal">İptal</option></select></div>
+          </div>
+          <div class="slist" id="s-list"></div>
+        </section>
+      </div>
+      <aside>
+        <section class="panel" aria-labelledby="sf-h">
+          <h2 id="sf-h">Yeni ürün siparişi</h2>
+          <div class="field" id="sf-kurum-wrap" hidden><label for="sf-kurum">Kurum</label><select id="sf-kurum"></select></div>
+          <div class="field"><label for="sf-ara">Ürün ara</label><input id="sf-ara" type="search" placeholder="Ürün adı ya da kategori…"></div>
+          <div class="urunsec" id="urunsec"></div>
+          <div class="sepet" id="sepet"></div>
+          <div class="field"><label for="sf-tarih">İstenen teslim tarihi</label><input id="sf-tarih" type="date"></div>
+          <div class="field"><label for="sf-not">Not</label><input id="sf-not" placeholder="Teslim adresi, yetkili, saat…"></div>
+          <button class="primary" type="button" id="sf-gonder">Siparişi gönder</button>
+          <div class="msg" id="sf-msg" role="status"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ÜRÜN KATALOĞU (yönetici) -->
+  <div class="main gut" id="v-urun" hidden>
+    <div class="in cols">
+      <div class="stack">
+        <section class="panel" aria-labelledby="u-h">
+          <h2 id="u-h">Ürün kataloğu</h2>
+          <p class="hint">Kurumlar yalnızca "satışta" olan ürünleri görür ve sipariş verebilir.</p>
+          <div class="ktable" id="u-list"></div>
+        </section>
+      </div>
+      <aside>
+        <section class="panel" aria-labelledby="uf-h">
+          <h2 id="uf-h">Ürün ekle</h2>
+          <form id="f-urun" autocomplete="off">
+            <div class="field"><label for="u-ad">Ürün adı</label><input id="u-ad" required placeholder="Örn. LGS 8. Sınıf Deneme Seti"></div>
+            <div class="field"><label for="u-kat">Kategori</label><input id="u-kat" list="u-katlist" placeholder="Örn. Deneme, Soru Bankası, Kırtasiye"><datalist id="u-katlist"></datalist></div>
+            <div class="two">
+              <div class="field"><label for="u-birim">Birim</label><select id="u-birim"><option>adet</option><option>paket</option><option>set</option><option>koli</option><option>kitap</option></select></div>
+              <div class="field"><label for="u-fiyat">Birim fiyat (₺)</label><input id="u-fiyat" type="number" min="0" step="0.01" inputmode="decimal" placeholder="İsteğe bağlı"></div>
+            </div>
+            <div class="field"><label for="u-acik">Açıklama</label><input id="u-acik" placeholder="İsteğe bağlı"></div>
+            <label class="row" style="gap:8px;font-size:14px"><input id="u-aktif" type="checkbox" checked style="width:auto"> Satışta (kurumlar görebilsin)</label>
+            <div class="row"><button class="primary" type="submit" id="u-btn">Ürün ekle</button><button type="button" id="u-iptal" hidden>Vazgeç</button></div>
+            <div class="msg" id="u-msg" role="status"></div>
+          </form>
+        </section>
+      </aside>
+    </div>
+  </div>
 </div>
 
 <div id="v-yok" class="login gut" hidden>
@@ -389,15 +494,24 @@ denemeler:[
 {id:"d4",kurum_id:"k1",tarih:g(-30),ad:"LGS Deneme 2",sinif:"8. sınıf",ogrenci:34,durum:"onaylandi"},
 {id:"d5",kurum_id:"k3",tarih:g(6),ad:"AYT Deneme 1",sinif:"12. sınıf",ogrenci:80,notlar:"Sabah 09:30",durum:"onaylandi"},
 {id:"d6",kurum_id:"k2",tarih:g(60),ad:"TYT Deneme 3",sinif:"12. sınıf",ogrenci:120,durum:"onaylandi"},
-{id:"d7",kurum_id:"k3",tarih:g(-10),ad:"TYT Deneme 1",sinif:"11. sınıf",ogrenci:75,durum:"onaylandi"}]};
+{id:"d7",kurum_id:"k3",tarih:g(-10),ad:"TYT Deneme 1",sinif:"11. sınıf",ogrenci:75,durum:"onaylandi"}],
+urunler:[{id:"u1",ad:"LGS 8. Sınıf Deneme Seti (5'li)",kategori:"Deneme",birim:"set",fiyat:250,aktif:true},
+{id:"u2",ad:"TYT Deneme Seti (3'lü)",kategori:"Deneme",birim:"set",fiyat:180,aktif:true},
+{id:"u3",ad:"8. Sınıf Matematik Soru Bankası",kategori:"Soru Bankası",birim:"kitap",fiyat:320,aktif:true},
+{id:"u4",ad:"AYT Fizik Soru Bankası",kategori:"Soru Bankası",birim:"kitap",fiyat:290,aktif:true},
+{id:"u5",ad:"Optik Form (100'lü)",kategori:"Kırtasiye",birim:"paket",fiyat:95,aktif:true},
+{id:"u6",ad:"Eski Baskı Deneme Seti",kategori:"Deneme",birim:"set",fiyat:120,aktif:false}],
+siparisler:[{id:"a1b2c3d4-0000-0000-0000-000000000001",kurum_id:"k1",kalemler:[{urun_id:"u1",ad:"LGS 8. Sınıf Deneme Seti (5'li)",birim:"set",fiyat:250,adet:35},{urun_id:"u5",ad:"Optik Form (100'lü)",birim:"paket",fiyat:95,adet:2}],teslim_tarihi:g(9),notlar:"Okul müdürlüğüne teslim",durum:"bekliyor",created_at:new Date(Date.now()-36e5).toISOString()},
+{id:"f9e8d7c6-0000-0000-0000-000000000002",kurum_id:"k2",kalemler:[{urun_id:"u2",ad:"TYT Deneme Seti (3'lü)",birim:"set",fiyat:180,adet:120}],teslim_tarihi:g(3),durum:"hazirlaniyor",created_at:new Date(Date.now()-3*864e5).toISOString()},
+{id:"0c1d2e3f-0000-0000-0000-000000000003",kurum_id:"k1",kalemler:[{urun_id:"u3",ad:"8. Sınıf Matematik Soru Bankası",birim:"kitap",fiyat:320,adet:40}],durum:"teslim",created_at:new Date(Date.now()-20*864e5).toISOString()}]};
 let n=100,user=null,cb=null;
 const isAdmin=()=>!!user&&db.yoneticiler.some(y=>y.email===user.email);
 const myK=()=>user&&(db.kurumlar.find(k=>k.email===user.email)||{}).id||null;
-const see=(t,r)=>isAdmin()||(t==="kurumlar"?r.id===myK():r.kurum_id===myK());
+const see=(t,r)=>isAdmin()||(t==="urunler"?r.aktif:t==="kurumlar"?r.id===myK():r.kurum_id===myK());
 function q(t){let op="select",body=null,f=null;const o={select(){return o},order(){return o},insert(b){op="insert";body=b;return o},update(b){op="update";body=b;return o},delete(){op="delete";return o},eq(k,v){f=[k,v];return o},
 then(res,rej){let data=null,error=null;
- if(op==="select")data=db[t].filter(r=>see(t,r));
- else if(op==="insert"){if(t==="kurumlar"&&db.kurumlar.some(k=>k.email===body.email))error={message:"duplicate key value violates unique constraint kurumlar_email"};else for(const b of (Array.isArray(body)?body:[body]))db[t].push({id:"n"+(n++),durum:"bekliyor",...b})}
+ if(op==="select"){data=db[t].filter(r=>see(t,r));if(t==="siparisler")data.sort((a,b)=>b.created_at.localeCompare(a.created_at))}
+ else if(op==="insert"){if(t==="kurumlar"&&db.kurumlar.some(k=>k.email===body.email))error={message:"duplicate key value violates unique constraint kurumlar_email"};else for(const b of (Array.isArray(body)?body:[body]))db[t].push({id:t==="siparisler"?(Date.now().toString(16)+"-"+(n++)+"-new"):"n"+(n++),durum:"bekliyor",created_at:new Date().toISOString(),...b})}
  else if(op==="update")db[t].forEach(r=>{if(r[f[0]]===f[1]&&see(t,r))Object.assign(r,body)});
  else{const del=db[t].filter(r=>r[f[0]]===f[1]).map(r=>r.id);db[t]=db[t].filter(r=>r[f[0]]!==f[1]);if(t==="kurumlar")db.denemeler=db.denemeler.filter(d=>!del.includes(d.kurum_id))}
  return Promise.resolve({data:data&&JSON.parse(JSON.stringify(data)),error}).then(res,rej)}};return o}
@@ -444,7 +558,7 @@ function hataMetni(e){
 }
 
 // ---------- durum ----------
-const S={gorunum:"liste",ay:null,rol:null,email:"",kurumId:null,kurumlar:[],denemeler:[],secili:"",yil:egitimYili(todayStr()),editId:null,editKurum:null,confirm:null,kanal:null};
+const S={sekme:"deneme",urunler:[],siparisler:[],sepet:{},uEdit:null,gorunum:"liste",ay:null,rol:null,email:"",kurumId:null,kurumlar:[],denemeler:[],secili:"",yil:egitimYili(todayStr()),editId:null,editKurum:null,confirm:null,kanal:null};
 const buYil=egitimYili(todayStr());
 
 // ---------- Supabase ----------
@@ -505,34 +619,38 @@ function kur(){
   $("who").textContent=(admin?"Yönetici · ":"")+S.email;
   $("p-siparis").hidden=!admin;$("p-kurumlar").hidden=!admin;$("ksec-wrap").hidden=!admin;$("fk-wrap").hidden=!admin;
   $("fkurum").required=admin;
+  $("nav-urun").hidden=!admin;$("sk-wrap").hidden=!admin;$("sf-kurum-wrap").hidden=!admin;
   $("form-h").textContent=admin?"Deneme ekle":"Deneme siparişi ver";
   $("kaydet").textContent=admin?"Kaydet":"Siparişi gönder";
   $("altbaslik").textContent=admin?"Kurumların deneme siparişleri. Denemeye 1 hafta kala uyarı çıkar.":"Deneme siparişlerinizi buradan verin ve takip edin.";
   const p=parts(todayStr());$("today").textContent=p.d+" "+AYTAM[p.m-1]+" "+p.y+", "+p.gun;
 }
 async function yukle(){
-  const [k,d]=await Promise.all([sb.from("kurumlar").select("*").order("ad"),sb.from("denemeler").select("*").order("tarih")]);
+  const [k,d,u,sp]=await Promise.all([sb.from("kurumlar").select("*").order("ad"),sb.from("denemeler").select("*").order("tarih"),
+    sb.from("urunler").select("*").order("ad"),sb.from("siparisler").select("*").order("created_at",{ascending:false})]);
   if(k.error||d.error){flash($("msg"),hataMetni(k.error||d.error),true);return}
   S.kurumlar=k.data;S.denemeler=d.data;
+  S.urunler=u.error?[]:u.data;S.siparisler=sp.error?[]:sp.data;S.urunHata=!!(u.error||sp.error);
   if(S.rol==="kurum")S.secili=S.kurumId;
   render();
 }
 function canli(){
   if(S.kanal)return;
-  S.kanal=sb.channel("denemeler").on("postgres_changes",{event:"*",schema:"public",table:"denemeler"},()=>yukle()).subscribe();
+  S.kanal=sb.channel("degisiklik").on("postgres_changes",{event:"*",schema:"public",table:"denemeler"},()=>yukle())
+    .on("postgres_changes",{event:"*",schema:"public",table:"siparisler"},()=>yukle()).subscribe();
   setInterval(()=>{if(!document.hidden)yukle()},5*60*1000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.rol)yukle()});
 
 // ---------- çizim ----------
 const kAd=id=>(S.kurumlar.find(k=>k.id===id)||{}).ad||"—";
-function render(){
+function render(){renderDeneme();renderSiparis();if(S.rol==="admin")renderUrunler();renderSekme()}
+function renderDeneme(){
   const admin=S.rol==="admin";const t=parts(todayStr());
   const all=[...S.denemeler].sort((a,b)=>a.tarih.localeCompare(b.tarih));
   const aktif=all.filter(x=>x.durum!=="iptal");
   const hafta=aktif.filter(x=>{const n=daysUntil(x.tarih);return n>=0&&n<=UYARI_GUN});
   const bekleyen=all.filter(x=>x.durum==="bekliyor"&&daysUntil(x.tarih)>=0);
-  if(!admin){const k=S.kurumlar.find(k=>k.id===S.kurumId);$("baslik").textContent=k?k.ad:"Kurum"}
   // özet
   const buAy=aktif.filter(x=>{const p=parts(x.tarih);return p.y===t.y&&p.m===t.m}).length;
   const kalanYil=aktif.filter(x=>egitimYili(x.tarih)===buYil&&daysUntil(x.tarih)>=0).length;
@@ -726,10 +844,120 @@ $("sablon").onclick=()=>{
   const blob=new Blob(["\ufeff"+rows.map(a=>a.join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="deneme-yukleme-sablonu.csv";document.body.appendChild(a);a.click();a.remove()};
 
+// ---------- sekmeler ----------
+function renderSekme(){
+  for(const id of ["deneme","siparis","urun"])$("v-"+id).hidden=S.sekme!==id;
+  document.querySelectorAll(".nav [data-sekme]").forEach(b=>b.setAttribute("aria-current",b.dataset.sekme===S.sekme?"page":"false"));
+  const bek=S.siparisler.filter(x=>x.durum==="bekliyor").length;$("nav-sip").textContent=bek||"";
+  const admin=S.rol==="admin";
+  $("baslik").textContent=S.sekme==="deneme"?(admin?"Deneme Sipariş Paneli":(S.kurumlar.find(k=>k.id===S.kurumId)||{}).ad||"Kurum")
+    :S.sekme==="siparis"?(admin?"Ürün Siparişleri":"Ürün Siparişlerim"):"Ürün Kataloğu";
+  if(S.sekme==="deneme")return;
+  $("altbaslik").textContent=S.sekme==="urun"?"Kurumların sipariş verebileceği ürünleri buradan yönetin."
+    :admin?"Kurumların ürün siparişleri. Durumu değiştirdiğinizde kurum hemen görür.":"Ürün siparişlerinizi buradan verin ve durumunu takip edin.";
+  const t=parts(todayStr());const buAy=S.siparisler.filter(x=>{const d=new Date(x.created_at);return d.getFullYear()===t.y&&d.getMonth()+1===t.m&&x.durum!=="iptal"});
+  const tut=buAy.every(x=>toplam(x.kalemler)!=null)?buAy.reduce((a,x)=>a+toplam(x.kalemler),0):null;
+  const say=d=>S.siparisler.filter(x=>x.durum===d).length;
+  $("sum").innerHTML=`<div><b>${bek}</b><span>onay bekliyor</span></div><div><b>${say("onaylandi")+say("hazirlaniyor")}</b><span>hazırlanacak</span></div>
+    <div><b>${buAy.length}</b><span>${AYTAM[t.m-1]} siparişi</span></div>`+(tut!=null&&buAy.length?`<div><b class="tut">${TL(tut)}</b><span>${AYTAM[t.m-1]} tutarı</span></div>`:"");
+}
+
+// ---------- ürün siparişleri ----------
+const SDURUM={bekliyor:"Onay bekliyor",onaylandi:"Onaylandı",hazirlaniyor:"Hazırlanıyor",teslim:"Teslim edildi",iptal:"İptal"};
+const TL=v=>v==null?"":new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY"}).format(v);
+const sipNo=x=>"#"+x.id.replace(/-/g,"").slice(0,6).toUpperCase();
+function toplam(kalemler){if(kalemler.some(k=>k.fiyat==null))return null;return kalemler.reduce((a,k)=>a+k.fiyat*k.adet,0)}
+function tarihSaat(iso){const d=new Date(iso);return d.getDate()+" "+AY[d.getMonth()]+" "+d.getFullYear()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function renderSiparis(){
+  const admin=S.rol==="admin";
+  if(admin){const cur=$("s-kurum").value;$("s-kurum").innerHTML=`<option value="">Tüm kurumlar</option>`+S.kurumlar.map(k=>`<option value="${k.id}">${esc(k.ad)}</option>`).join("");$("s-kurum").value=cur;
+    const c2=$("sf-kurum").value;$("sf-kurum").innerHTML=`<option value="">Kurum seçin…</option>`+S.kurumlar.map(k=>`<option value="${k.id}">${esc(k.ad)}</option>`).join("");$("sf-kurum").value=c2}
+  const fk=$("s-kurum").value,fd=$("s-durum").value;
+  const list=S.siparisler.filter(x=>(!fk||x.kurum_id===fk)&&(!fd||x.durum===fd));
+  $("s-list").innerHTML=S.urunHata?'<div class="empty">Ürün tabloları veritabanında henüz yok. README\'deki SQL\'i yeniden çalıştırın.</div>'
+   :!list.length?`<div class="empty">${S.siparisler.length?"Bu seçimde sipariş yok.":admin?"Henüz ürün siparişi yok. Kurumların siparişleri buraya düşer.":"Henüz siparişiniz yok. Sağdaki formdan ürün seçip sipariş verebilirsiniz."}</div>`
+   :list.map(x=>{const t=toplam(x.kalemler);const adet=x.kalemler.reduce((a,k)=>a+k.adet,0);
+    return `<div class="scard ${x.durum}">
+      <div class="shead"><div><strong>${admin?esc(kAd(x.kurum_id))+" · ":""}Sipariş ${sipNo(x)}</strong>
+        <div class="meta">${tarihSaat(x.created_at)}${x.teslim_tarihi?" · İstenen teslim: "+tarihYaz(x.teslim_tarihi):""}</div></div>
+        <span class="pill ${x.durum==="bekliyor"?"bekliyor":x.durum==="iptal"?"iptal":x.durum==="teslim"?"teslim":x.durum==="hazirlaniyor"?"hazirlaniyor":"onaylandi"}">${SDURUM[x.durum]}</span></div>
+      <div class="skal">${x.kalemler.map(k=>`<div><span>${esc(k.ad)}</span><span>${k.adet} ${esc(k.birim||"adet")}${k.fiyat!=null?" · "+TL(k.fiyat*k.adet):""}</span></div>`).join("")}</div>
+      ${x.notlar?`<div class="meta" style="font-size:13px;color:var(--muted)">Not: ${esc(x.notlar)}</div>`:""}
+      <div class="sfoot"><span style="font-size:13.5px"><b>${adet}</b> ürün${t!=null?" · Toplam <b>"+TL(t)+"</b>":""}</span>
+        <div class="row" style="gap:6px">${admin?`<select data-sdurum="${x.id}" aria-label="Sipariş durumu">${Object.entries(SDURUM).map(([k,v])=>`<option value="${k}" ${k===x.durum?"selected":""}>${v}</option>`).join("")}</select>`:""}
+        ${admin||x.durum==="bekliyor"?`<button class="ghost danger" data-ssil="${x.id}">${admin?"Sil":"Siparişi geri çek"}</button>`:""}</div></div>
+      ${S.confirm==="s"+x.id?`<div class="confirm">Sipariş ${sipNo(x)} silinsin mi? <button class="danger" data-ssilok="${x.id}">Evet</button><button data-delno="1">Vazgeç</button></div>`:""}
+    </div>`}).join("");
+  // ürün seçimi
+  const ara=$("sf-ara").value.trim().toLocaleLowerCase("tr");
+  const urs=S.urunler.filter(u=>u.aktif&&(!ara||(u.ad+" "+(u.kategori||"")).toLocaleLowerCase("tr").includes(ara)));
+  const kats=[...new Set(urs.map(u=>u.kategori||"Diğer"))].sort((a,b)=>a.localeCompare(b,"tr"));
+  $("urunsec").innerHTML=!S.urunler.some(u=>u.aktif)?`<div class="empty">${admin?"Önce Ürün kataloğu sekmesinden ürün ekleyin.":"Henüz satışta ürün yok."}</div>`
+    :!urs.length?'<div class="empty">Aramaya uyan ürün yok.</div>'
+    :kats.map(k=>`<div class="ukat">${esc(k)}</div>`+urs.filter(u=>(u.kategori||"Diğer")===k).map(u=>{const q=S.sepet[u.id]||0;
+      return `<div class="urow ${q?"sec":""}"><div><strong>${esc(u.ad)}</strong><span>${esc(u.birim)}${u.fiyat!=null?" · "+TL(u.fiyat):""}${u.aciklama?" · "+esc(u.aciklama):""}</span></div>
+      <div class="qty"><button type="button" data-q="${u.id}" data-d="-1" aria-label="Azalt">−</button><input type="number" min="0" inputmode="numeric" value="${q||""}" placeholder="0" data-qi="${u.id}" aria-label="${esc(u.ad)} adedi"><button type="button" data-q="${u.id}" data-d="1" aria-label="Artır">+</button></div></div>`}).join("")).join("");
+  renderSepet();
+}
+function renderSepet(){
+  const kal=Object.entries(S.sepet).filter(([,q])=>q>0).map(([id,q])=>({u:S.urunler.find(u=>u.id===id),q})).filter(x=>x.u);
+  if(!kal.length){$("sepet").innerHTML="";$("sf-gonder").disabled=true;return}
+  const t=kal.every(x=>x.u.fiyat!=null)?kal.reduce((a,x)=>a+x.u.fiyat*x.q,0):null;
+  $("sepet").innerHTML=kal.map(x=>`<div class="sat"><span>${esc(x.u.ad)}</span><span>${x.q} ${esc(x.u.birim)}</span></div>`).join("")+
+    `<div class="sat top"><span>${kal.reduce((a,x)=>a+x.q,0)} ürün</span><span>${t!=null?TL(t):""}</span></div>`;
+  $("sf-gonder").disabled=false;
+}
+$("urunsec").addEventListener("input",e=>{const id=e.target.dataset.qi;if(!id)return;const v=Math.max(0,parseInt(e.target.value)||0);S.sepet[id]=v;
+  e.target.closest(".urow").classList.toggle("sec",v>0);renderSepet()});
+$("sf-ara").addEventListener("input",()=>renderSiparis());
+$("s-kurum").onchange=$("s-durum").onchange=()=>renderSiparis();
+$("v-siparis").addEventListener("change",async e=>{const id=e.target.dataset.sdurum;if(!id)return;
+  const {error}=await sb.from("siparisler").update({durum:e.target.value}).eq("id",id);if(error)flash($("sf-msg"),hataMetni(error),true);yukle()});
+$("sf-gonder").onclick=async()=>{
+  const admin=S.rol==="admin";const kurum_id=admin?$("sf-kurum").value:S.kurumId;
+  if(!kurum_id){flash($("sf-msg"),"Kurum seçin.",true);return}
+  const kalemler=Object.entries(S.sepet).filter(([,q])=>q>0).map(([id,q])=>{const u=S.urunler.find(u=>u.id===id);return u&&{urun_id:u.id,ad:u.ad,birim:u.birim,fiyat:u.fiyat??null,adet:q}}).filter(Boolean);
+  if(!kalemler.length){flash($("sf-msg"),"En az bir ürün seçin.",true);return}
+  $("sf-gonder").disabled=true;
+  const body={kurum_id,kalemler,teslim_tarihi:$("sf-tarih").value||null,notlar:$("sf-not").value.trim()||null};if(admin)body.durum="onaylandi";
+  const {error}=await sb.from("siparisler").insert(body);
+  if(error){flash($("sf-msg"),hataMetni(error),true);$("sf-gonder").disabled=false;return}
+  S.sepet={};$("sf-tarih").value="";$("sf-not").value="";$("sf-ara").value="";
+  flash($("sf-msg"),admin?"Sipariş kaydedildi.":"Siparişiniz gönderildi. Onaylanınca durumu burada görünecek.");yukle()};
+
+// ---------- ürün kataloğu (yönetici) ----------
+function renderUrunler(){
+  $("u-katlist").innerHTML=[...new Set(S.urunler.map(u=>u.kategori).filter(Boolean))].map(k=>`<option value="${esc(k)}">`).join("");
+  $("u-list").innerHTML=S.urunHata?'<div class="empty">Ürün tabloları veritabanında henüz yok. README\'deki SQL\'i yeniden çalıştırın.</div>'
+   :!S.urunler.length?'<div class="empty">Henüz ürün yok. Sağdaki formdan ilk ürünü ekleyin.</div>'
+   :S.urunler.map(u=>{const sat=S.siparisler.filter(x=>x.durum!=="iptal").reduce((a,x)=>a+x.kalemler.filter(k=>k.urun_id===u.id).reduce((b,k)=>b+k.adet,0),0);
+    return `<div class="krow ${u.aktif?"":"pasif"}"><div><strong>${esc(u.ad)}</strong><span>${[u.kategori,u.birim,u.fiyat!=null?TL(u.fiyat):"",u.aciklama].filter(Boolean).map(esc).join(" · ")}</span>
+      <div class="kst"><span>${u.aktif?"Satışta":"Satışta değil"}</span><span>${sat} ${esc(u.birim)} sipariş edildi</span></div></div>
+      <div class="row" style="gap:0"><button class="ghost" data-uedit="${u.id}">Düzenle</button><button class="ghost danger" data-usil="${u.id}">Sil</button></div>
+      ${S.confirm==="u"+u.id?`<div class="confirm">${esc(u.ad)} silinsin mi? Eski siparişlerde adı görünmeye devam eder. <button class="danger" data-usilok="${u.id}">Evet, sil</button><button data-delno="1">Vazgeç</button></div>`:""}</div>`}).join("");
+}
+function uSifirla(){$("f-urun").reset();$("u-aktif").checked=true;S.uEdit=null;$("u-btn").textContent="Ürün ekle";$("uf-h").textContent="Ürün ekle";$("u-iptal").hidden=true}
+$("u-iptal").onclick=uSifirla;
+$("f-urun").addEventListener("submit",async e=>{e.preventDefault();
+  const f=$("u-fiyat").value;
+  const body={ad:$("u-ad").value.trim(),kategori:$("u-kat").value.trim()||null,birim:$("u-birim").value,fiyat:f===""?null:Number(f),aciklama:$("u-acik").value.trim()||null,aktif:$("u-aktif").checked};
+  if(!body.ad)return;
+  const {error}=S.uEdit?await sb.from("urunler").update(body).eq("id",S.uEdit):await sb.from("urunler").insert(body);
+  if(error){flash($("u-msg"),hataMetni(error),true);return}
+  flash($("u-msg"),(S.uEdit?"Güncellendi: ":"Eklendi: ")+body.ad);uSifirla();yukle()});
+
 // ---------- tıklamalar ----------
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
-  if(d.m){const [yy,mm]=d.m.split("-").map(Number);if(S.gorunum==="takvim"){S.ay=yy*12+mm-1;render()}else{const el=document.getElementById("m-"+d.m);if(el)el.scrollIntoView({block:"start"})}}
+  if(d.sekme){S.sekme=d.sekme;S.confirm=null;render();window.scrollTo({top:0})}
+  else if(d.q){const q=Math.max(0,(S.sepet[d.q]||0)+Number(d.d));S.sepet[d.q]=q;renderSiparis()}
+  else if(d.ssil){S.confirm="s"+d.ssil;renderSiparis()}
+  else if(d.ssilok){S.confirm=null;const {error}=await sb.from("siparisler").delete().eq("id",d.ssilok);if(error)flash($("sf-msg"),hataMetni(error),true);yukle()}
+  else if(d.uedit){const u=S.urunler.find(x=>x.id===d.uedit);if(!u)return;S.uEdit=u.id;$("u-ad").value=u.ad;$("u-kat").value=u.kategori||"";$("u-birim").value=u.birim;
+    $("u-fiyat").value=u.fiyat??"";$("u-acik").value=u.aciklama||"";$("u-aktif").checked=u.aktif;$("u-btn").textContent="Güncelle";$("uf-h").textContent="Ürünü düzenle";$("u-iptal").hidden=false;$("u-ad").focus()}
+  else if(d.usil){S.confirm="u"+d.usil;renderUrunler()}
+  else if(d.usilok){S.confirm=null;const {error}=await sb.from("urunler").delete().eq("id",d.usilok);if(error)flash($("u-msg"),hataMetni(error),true);yukle()}
+  else if(d.m){const [yy,mm]=d.m.split("-").map(Number);if(S.gorunum==="takvim"){S.ay=yy*12+mm-1;render()}else{const el=document.getElementById("m-"+d.m);if(el)el.scrollIntoView({block:"start"})}}
   else if(d.ay){S.ay+=Number(d.ay);render()}
   else if(d.onay||d.iptal){const {error}=await sb.from("denemeler").update({durum:d.onay?"onaylandi":"iptal"}).eq("id",d.onay||d.iptal);if(error)flash($("msg"),hataMetni(error),true);yukle()}
   else if(d.edit){const x=S.denemeler.find(y=>y.id===d.edit);if(!x)return;S.editId=x.id;S.editKurum=x.kurum_id;

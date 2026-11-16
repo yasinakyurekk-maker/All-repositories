@@ -71,6 +71,55 @@ drop policy if exists d_sil on denemeler;
 create policy d_sil on denemeler for delete to authenticated
   using (is_admin() or (kurum_id = benim_kurum() and durum = 'bekliyor'));
 
+-- ---------- ÜRÜNLER VE ÜRÜN SİPARİŞLERİ ----------
+create table if not exists urunler (
+  id uuid primary key default gen_random_uuid(),
+  ad text not null,
+  kategori text,
+  birim text not null default 'adet',
+  fiyat numeric(10,2),
+  aciklama text,
+  aktif boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- kalemler: [{"urun_id": "...", "ad": "...", "birim": "adet", "fiyat": 12.5, "adet": 40}, ...]
+create table if not exists siparisler (
+  id uuid primary key default gen_random_uuid(),
+  kurum_id uuid not null references kurumlar(id) on delete cascade,
+  kalemler jsonb not null check (jsonb_typeof(kalemler) = 'array' and jsonb_array_length(kalemler) > 0),
+  teslim_tarihi date,
+  notlar text,
+  durum text not null default 'bekliyor' check (durum in ('bekliyor','onaylandi','hazirlaniyor','teslim','iptal')),
+  created_at timestamptz not null default now()
+);
+create index if not exists siparisler_created on siparisler(created_at desc);
+
+alter table urunler    enable row level security;
+alter table siparisler enable row level security;
+
+drop policy if exists u_oku on urunler;
+create policy u_oku on urunler for select to authenticated using (aktif or is_admin());
+drop policy if exists u_yaz on urunler;
+create policy u_yaz on urunler for all to authenticated using (is_admin()) with check (is_admin());
+
+drop policy if exists s_oku on siparisler;
+create policy s_oku on siparisler for select to authenticated using (is_admin() or kurum_id = benim_kurum());
+drop policy if exists s_ekle on siparisler;
+create policy s_ekle on siparisler for insert to authenticated
+  with check (is_admin() or (kurum_id = benim_kurum() and durum = 'bekliyor'));
+drop policy if exists s_guncelle on siparisler;
+create policy s_guncelle on siparisler for update to authenticated
+  using (is_admin() or (kurum_id = benim_kurum() and durum = 'bekliyor'))
+  with check (is_admin() or (kurum_id = benim_kurum() and durum = 'bekliyor'));
+drop policy if exists s_sil on siparisler;
+create policy s_sil on siparisler for delete to authenticated
+  using (is_admin() or (kurum_id = benim_kurum() and durum = 'bekliyor'));
+
+do $$ begin
+  alter publication supabase_realtime add table siparisler;
+exception when others then null; end $$;
+
 -- Yeni kayıtlar yönetici ekranına anında düşsün
 do $$ begin
   alter publication supabase_realtime add table denemeler;

@@ -46,9 +46,14 @@
       </div>
       <div class="sum" id="sum"></div>
     </div>
+    <nav class="in nav" aria-label="Bölümler">
+      <button type="button" data-sekme="deneme" aria-current="page">Denemeler</button>
+      <button type="button" data-sekme="siparis">Ürün siparişleri <span class="badge" id="nav-sip"></span></button>
+      <button type="button" data-sekme="urun" id="nav-urun" hidden>Ürün kataloğu</button>
+    </nav>
   </header>
 
-  <div class="main gut">
+  <div class="main gut" id="v-deneme">
     <div class="in cols">
       <div class="stack">
         <!-- yönetici: yeni siparişler -->
@@ -136,6 +141,67 @@
             <div class="row"><button class="primary" type="button" id="yukle-btn">Ekle</button><button type="button" id="yukle-iptal">Vazgeç</button></div>
           </div>
           <div class="msg" id="yukle-msg" role="status"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ÜRÜN SİPARİŞLERİ -->
+  <div class="main gut" id="v-siparis" hidden>
+    <div class="in cols">
+      <div class="stack">
+        <section class="panel" aria-labelledby="s-h">
+          <h2 id="s-h">Ürün siparişleri</h2>
+          <div class="tools">
+            <div class="field" id="sk-wrap" style="flex:1 1 200px"><label for="s-kurum">Kurum</label><select id="s-kurum"></select></div>
+            <div class="field" style="flex:0 1 190px"><label for="s-durum">Durum</label><select id="s-durum">
+              <option value="">Tümü</option><option value="bekliyor">Onay bekliyor</option><option value="onaylandi">Onaylandı</option>
+              <option value="hazirlaniyor">Hazırlanıyor</option><option value="teslim">Teslim edildi</option><option value="iptal">İptal</option></select></div>
+          </div>
+          <div class="slist" id="s-list"></div>
+        </section>
+      </div>
+      <aside>
+        <section class="panel" aria-labelledby="sf-h">
+          <h2 id="sf-h">Yeni ürün siparişi</h2>
+          <div class="field" id="sf-kurum-wrap" hidden><label for="sf-kurum">Kurum</label><select id="sf-kurum"></select></div>
+          <div class="field"><label for="sf-ara">Ürün ara</label><input id="sf-ara" type="search" placeholder="Ürün adı ya da kategori…"></div>
+          <div class="urunsec" id="urunsec"></div>
+          <div class="sepet" id="sepet"></div>
+          <div class="field"><label for="sf-tarih">İstenen teslim tarihi</label><input id="sf-tarih" type="date"></div>
+          <div class="field"><label for="sf-not">Not</label><input id="sf-not" placeholder="Teslim adresi, yetkili, saat…"></div>
+          <button class="primary" type="button" id="sf-gonder">Siparişi gönder</button>
+          <div class="msg" id="sf-msg" role="status"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ÜRÜN KATALOĞU (yönetici) -->
+  <div class="main gut" id="v-urun" hidden>
+    <div class="in cols">
+      <div class="stack">
+        <section class="panel" aria-labelledby="u-h">
+          <h2 id="u-h">Ürün kataloğu</h2>
+          <p class="hint">Kurumlar yalnızca "satışta" olan ürünleri görür ve sipariş verebilir.</p>
+          <div class="ktable" id="u-list"></div>
+        </section>
+      </div>
+      <aside>
+        <section class="panel" aria-labelledby="uf-h">
+          <h2 id="uf-h">Ürün ekle</h2>
+          <form id="f-urun" autocomplete="off">
+            <div class="field"><label for="u-ad">Ürün adı</label><input id="u-ad" required placeholder="Örn. LGS 8. Sınıf Deneme Seti"></div>
+            <div class="field"><label for="u-kat">Kategori</label><input id="u-kat" list="u-katlist" placeholder="Örn. Deneme, Soru Bankası, Kırtasiye"><datalist id="u-katlist"></datalist></div>
+            <div class="two">
+              <div class="field"><label for="u-birim">Birim</label><select id="u-birim"><option>adet</option><option>paket</option><option>set</option><option>koli</option><option>kitap</option></select></div>
+              <div class="field"><label for="u-fiyat">Birim fiyat (₺)</label><input id="u-fiyat" type="number" min="0" step="0.01" inputmode="decimal" placeholder="İsteğe bağlı"></div>
+            </div>
+            <div class="field"><label for="u-acik">Açıklama</label><input id="u-acik" placeholder="İsteğe bağlı"></div>
+            <label class="row" style="gap:8px;font-size:14px"><input id="u-aktif" type="checkbox" checked style="width:auto"> Satışta (kurumlar görebilsin)</label>
+            <div class="row"><button class="primary" type="submit" id="u-btn">Ürün ekle</button><button type="button" id="u-iptal" hidden>Vazgeç</button></div>
+            <div class="msg" id="u-msg" role="status"></div>
+          </form>
         </section>
       </aside>
     </div>

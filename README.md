@@ -6,6 +6,9 @@ Kurumların deneme siparişi verdiği, yöneticinin tüm kurumların denemelerin
 
 - **Yönetici**: kurumları tanımlar (ad + giriş e-postası), gelen siparişleri onaylar veya iptal eder, tüm takvimi görür. Denemeye 1 hafta kala uyarı çıkar.
 - **Kurum**: kendi e-postasıyla girer, yalnızca kendi denemelerini görür, sipariş verir. Onaylanana kadar düzenleyip silebilir.
+- **Ürün siparişleri**: yönetici ürün kataloğunu tanımlar (ad, kategori, birim, fiyat). Kurumlar adet seçip ürün siparişi verir; yönetici durumu (onaylandı, hazırlanıyor, teslim edildi, iptal) günceller.
+
+> Daha önce SQL'i çalıştırdıysanız, `supabase.sql` dosyasını yeniden çalıştırmanız yeterli; mevcut veriler silinmez.
 
 Veriler Supabase'de durur, site Vercel'de yayınlanır. İkisi de ücretsiz.
 

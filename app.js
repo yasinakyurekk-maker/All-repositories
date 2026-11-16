@@ -28,7 +28,7 @@ function hataMetni(e){
 }
 
 // ---------- durum ----------
-const S={gorunum:"liste",ay:null,rol:null,email:"",kurumId:null,kurumlar:[],denemeler:[],secili:"",yil:egitimYili(todayStr()),editId:null,editKurum:null,confirm:null,kanal:null};
+const S={sekme:"deneme",urunler:[],siparisler:[],sepet:{},uEdit:null,gorunum:"liste",ay:null,rol:null,email:"",kurumId:null,kurumlar:[],denemeler:[],secili:"",yil:egitimYili(todayStr()),editId:null,editKurum:null,confirm:null,kanal:null};
 const buYil=egitimYili(todayStr());
 
 // ---------- Supabase ----------
@@ -89,34 +89,38 @@ function kur(){
   $("who").textContent=(admin?"Yönetici · ":"")+S.email;
   $("p-siparis").hidden=!admin;$("p-kurumlar").hidden=!admin;$("ksec-wrap").hidden=!admin;$("fk-wrap").hidden=!admin;
   $("fkurum").required=admin;
+  $("nav-urun").hidden=!admin;$("sk-wrap").hidden=!admin;$("sf-kurum-wrap").hidden=!admin;
   $("form-h").textContent=admin?"Deneme ekle":"Deneme siparişi ver";
   $("kaydet").textContent=admin?"Kaydet":"Siparişi gönder";
   $("altbaslik").textContent=admin?"Kurumların deneme siparişleri. Denemeye 1 hafta kala uyarı çıkar.":"Deneme siparişlerinizi buradan verin ve takip edin.";
   const p=parts(todayStr());$("today").textContent=p.d+" "+AYTAM[p.m-1]+" "+p.y+", "+p.gun;
 }
 async function yukle(){
-  const [k,d]=await Promise.all([sb.from("kurumlar").select("*").order("ad"),sb.from("denemeler").select("*").order("tarih")]);
+  const [k,d,u,sp]=await Promise.all([sb.from("kurumlar").select("*").order("ad"),sb.from("denemeler").select("*").order("tarih"),
+    sb.from("urunler").select("*").order("ad"),sb.from("siparisler").select("*").order("created_at",{ascending:false})]);
   if(k.error||d.error){flash($("msg"),hataMetni(k.error||d.error),true);return}
   S.kurumlar=k.data;S.denemeler=d.data;
+  S.urunler=u.error?[]:u.data;S.siparisler=sp.error?[]:sp.data;S.urunHata=!!(u.error||sp.error);
   if(S.rol==="kurum")S.secili=S.kurumId;
   render();
 }
 function canli(){
   if(S.kanal)return;
-  S.kanal=sb.channel("denemeler").on("postgres_changes",{event:"*",schema:"public",table:"denemeler"},()=>yukle()).subscribe();
+  S.kanal=sb.channel("degisiklik").on("postgres_changes",{event:"*",schema:"public",table:"denemeler"},()=>yukle())
+    .on("postgres_changes",{event:"*",schema:"public",table:"siparisler"},()=>yukle()).subscribe();
   setInterval(()=>{if(!document.hidden)yukle()},5*60*1000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.rol)yukle()});
 
 // ---------- çizim ----------
 const kAd=id=>(S.kurumlar.find(k=>k.id===id)||{}).ad||"—";
-function render(){
+function render(){renderDeneme();renderSiparis();if(S.rol==="admin")renderUrunler();renderSekme()}
+function renderDeneme(){
   const admin=S.rol==="admin";const t=parts(todayStr());
   const all=[...S.denemeler].sort((a,b)=>a.tarih.localeCompare(b.tarih));
   const aktif=all.filter(x=>x.durum!=="iptal");
   const hafta=aktif.filter(x=>{const n=daysUntil(x.tarih);return n>=0&&n<=UYARI_GUN});
   const bekleyen=all.filter(x=>x.durum==="bekliyor"&&daysUntil(x.tarih)>=0);
-  if(!admin){const k=S.kurumlar.find(k=>k.id===S.kurumId);$("baslik").textContent=k?k.ad:"Kurum"}
   // özet
   const buAy=aktif.filter(x=>{const p=parts(x.tarih);return p.y===t.y&&p.m===t.m}).length;
   const kalanYil=aktif.filter(x=>egitimYili(x.tarih)===buYil&&daysUntil(x.tarih)>=0).length;
@@ -310,10 +314,120 @@ $("sablon").onclick=()=>{
   const blob=new Blob(["\ufeff"+rows.map(a=>a.join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="deneme-yukleme-sablonu.csv";document.body.appendChild(a);a.click();a.remove()};
 
+// ---------- sekmeler ----------
+function renderSekme(){
+  for(const id of ["deneme","siparis","urun"])$("v-"+id).hidden=S.sekme!==id;
+  document.querySelectorAll(".nav [data-sekme]").forEach(b=>b.setAttribute("aria-current",b.dataset.sekme===S.sekme?"page":"false"));
+  const bek=S.siparisler.filter(x=>x.durum==="bekliyor").length;$("nav-sip").textContent=bek||"";
+  const admin=S.rol==="admin";
+  $("baslik").textContent=S.sekme==="deneme"?(admin?"Deneme Sipariş Paneli":(S.kurumlar.find(k=>k.id===S.kurumId)||{}).ad||"Kurum")
+    :S.sekme==="siparis"?(admin?"Ürün Siparişleri":"Ürün Siparişlerim"):"Ürün Kataloğu";
+  if(S.sekme==="deneme")return;
+  $("altbaslik").textContent=S.sekme==="urun"?"Kurumların sipariş verebileceği ürünleri buradan yönetin."
+    :admin?"Kurumların ürün siparişleri. Durumu değiştirdiğinizde kurum hemen görür.":"Ürün siparişlerinizi buradan verin ve durumunu takip edin.";
+  const t=parts(todayStr());const buAy=S.siparisler.filter(x=>{const d=new Date(x.created_at);return d.getFullYear()===t.y&&d.getMonth()+1===t.m&&x.durum!=="iptal"});
+  const tut=buAy.every(x=>toplam(x.kalemler)!=null)?buAy.reduce((a,x)=>a+toplam(x.kalemler),0):null;
+  const say=d=>S.siparisler.filter(x=>x.durum===d).length;
+  $("sum").innerHTML=`<div><b>${bek}</b><span>onay bekliyor</span></div><div><b>${say("onaylandi")+say("hazirlaniyor")}</b><span>hazırlanacak</span></div>
+    <div><b>${buAy.length}</b><span>${AYTAM[t.m-1]} siparişi</span></div>`+(tut!=null&&buAy.length?`<div><b class="tut">${TL(tut)}</b><span>${AYTAM[t.m-1]} tutarı</span></div>`:"");
+}
+
+// ---------- ürün siparişleri ----------
+const SDURUM={bekliyor:"Onay bekliyor",onaylandi:"Onaylandı",hazirlaniyor:"Hazırlanıyor",teslim:"Teslim edildi",iptal:"İptal"};
+const TL=v=>v==null?"":new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY"}).format(v);
+const sipNo=x=>"#"+x.id.replace(/-/g,"").slice(0,6).toUpperCase();
+function toplam(kalemler){if(kalemler.some(k=>k.fiyat==null))return null;return kalemler.reduce((a,k)=>a+k.fiyat*k.adet,0)}
+function tarihSaat(iso){const d=new Date(iso);return d.getDate()+" "+AY[d.getMonth()]+" "+d.getFullYear()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function renderSiparis(){
+  const admin=S.rol==="admin";
+  if(admin){const cur=$("s-kurum").value;$("s-kurum").innerHTML=`<option value="">Tüm kurumlar</option>`+S.kurumlar.map(k=>`<option value="${k.id}">${esc(k.ad)}</option>`).join("");$("s-kurum").value=cur;
+    const c2=$("sf-kurum").value;$("sf-kurum").innerHTML=`<option value="">Kurum seçin…</option>`+S.kurumlar.map(k=>`<option value="${k.id}">${esc(k.ad)}</option>`).join("");$("sf-kurum").value=c2}
+  const fk=$("s-kurum").value,fd=$("s-durum").value;
+  const list=S.siparisler.filter(x=>(!fk||x.kurum_id===fk)&&(!fd||x.durum===fd));
+  $("s-list").innerHTML=S.urunHata?'<div class="empty">Ürün tabloları veritabanında henüz yok. README\'deki SQL\'i yeniden çalıştırın.</div>'
+   :!list.length?`<div class="empty">${S.siparisler.length?"Bu seçimde sipariş yok.":admin?"Henüz ürün siparişi yok. Kurumların siparişleri buraya düşer.":"Henüz siparişiniz yok. Sağdaki formdan ürün seçip sipariş verebilirsiniz."}</div>`
+   :list.map(x=>{const t=toplam(x.kalemler);const adet=x.kalemler.reduce((a,k)=>a+k.adet,0);
+    return `<div class="scard ${x.durum}">
+      <div class="shead"><div><strong>${admin?esc(kAd(x.kurum_id))+" · ":""}Sipariş ${sipNo(x)}</strong>
+        <div class="meta">${tarihSaat(x.created_at)}${x.teslim_tarihi?" · İstenen teslim: "+tarihYaz(x.teslim_tarihi):""}</div></div>
+        <span class="pill ${x.durum==="bekliyor"?"bekliyor":x.durum==="iptal"?"iptal":x.durum==="teslim"?"teslim":x.durum==="hazirlaniyor"?"hazirlaniyor":"onaylandi"}">${SDURUM[x.durum]}</span></div>
+      <div class="skal">${x.kalemler.map(k=>`<div><span>${esc(k.ad)}</span><span>${k.adet} ${esc(k.birim||"adet")}${k.fiyat!=null?" · "+TL(k.fiyat*k.adet):""}</span></div>`).join("")}</div>
+      ${x.notlar?`<div class="meta" style="font-size:13px;color:var(--muted)">Not: ${esc(x.notlar)}</div>`:""}
+      <div class="sfoot"><span style="font-size:13.5px"><b>${adet}</b> ürün${t!=null?" · Toplam <b>"+TL(t)+"</b>":""}</span>
+        <div class="row" style="gap:6px">${admin?`<select data-sdurum="${x.id}" aria-label="Sipariş durumu">${Object.entries(SDURUM).map(([k,v])=>`<option value="${k}" ${k===x.durum?"selected":""}>${v}</option>`).join("")}</select>`:""}
+        ${admin||x.durum==="bekliyor"?`<button class="ghost danger" data-ssil="${x.id}">${admin?"Sil":"Siparişi geri çek"}</button>`:""}</div></div>
+      ${S.confirm==="s"+x.id?`<div class="confirm">Sipariş ${sipNo(x)} silinsin mi? <button class="danger" data-ssilok="${x.id}">Evet</button><button data-delno="1">Vazgeç</button></div>`:""}
+    </div>`}).join("");
+  // ürün seçimi
+  const ara=$("sf-ara").value.trim().toLocaleLowerCase("tr");
+  const urs=S.urunler.filter(u=>u.aktif&&(!ara||(u.ad+" "+(u.kategori||"")).toLocaleLowerCase("tr").includes(ara)));
+  const kats=[...new Set(urs.map(u=>u.kategori||"Diğer"))].sort((a,b)=>a.localeCompare(b,"tr"));
+  $("urunsec").innerHTML=!S.urunler.some(u=>u.aktif)?`<div class="empty">${admin?"Önce Ürün kataloğu sekmesinden ürün ekleyin.":"Henüz satışta ürün yok."}</div>`
+    :!urs.length?'<div class="empty">Aramaya uyan ürün yok.</div>'
+    :kats.map(k=>`<div class="ukat">${esc(k)}</div>`+urs.filter(u=>(u.kategori||"Diğer")===k).map(u=>{const q=S.sepet[u.id]||0;
+      return `<div class="urow ${q?"sec":""}"><div><strong>${esc(u.ad)}</strong><span>${esc(u.birim)}${u.fiyat!=null?" · "+TL(u.fiyat):""}${u.aciklama?" · "+esc(u.aciklama):""}</span></div>
+      <div class="qty"><button type="button" data-q="${u.id}" data-d="-1" aria-label="Azalt">−</button><input type="number" min="0" inputmode="numeric" value="${q||""}" placeholder="0" data-qi="${u.id}" aria-label="${esc(u.ad)} adedi"><button type="button" data-q="${u.id}" data-d="1" aria-label="Artır">+</button></div></div>`}).join("")).join("");
+  renderSepet();
+}
+function renderSepet(){
+  const kal=Object.entries(S.sepet).filter(([,q])=>q>0).map(([id,q])=>({u:S.urunler.find(u=>u.id===id),q})).filter(x=>x.u);
+  if(!kal.length){$("sepet").innerHTML="";$("sf-gonder").disabled=true;return}
+  const t=kal.every(x=>x.u.fiyat!=null)?kal.reduce((a,x)=>a+x.u.fiyat*x.q,0):null;
+  $("sepet").innerHTML=kal.map(x=>`<div class="sat"><span>${esc(x.u.ad)}</span><span>${x.q} ${esc(x.u.birim)}</span></div>`).join("")+
+    `<div class="sat top"><span>${kal.reduce((a,x)=>a+x.q,0)} ürün</span><span>${t!=null?TL(t):""}</span></div>`;
+  $("sf-gonder").disabled=false;
+}
+$("urunsec").addEventListener("input",e=>{const id=e.target.dataset.qi;if(!id)return;const v=Math.max(0,parseInt(e.target.value)||0);S.sepet[id]=v;
+  e.target.closest(".urow").classList.toggle("sec",v>0);renderSepet()});
+$("sf-ara").addEventListener("input",()=>renderSiparis());
+$("s-kurum").onchange=$("s-durum").onchange=()=>renderSiparis();
+$("v-siparis").addEventListener("change",async e=>{const id=e.target.dataset.sdurum;if(!id)return;
+  const {error}=await sb.from("siparisler").update({durum:e.target.value}).eq("id",id);if(error)flash($("sf-msg"),hataMetni(error),true);yukle()});
+$("sf-gonder").onclick=async()=>{
+  const admin=S.rol==="admin";const kurum_id=admin?$("sf-kurum").value:S.kurumId;
+  if(!kurum_id){flash($("sf-msg"),"Kurum seçin.",true);return}
+  const kalemler=Object.entries(S.sepet).filter(([,q])=>q>0).map(([id,q])=>{const u=S.urunler.find(u=>u.id===id);return u&&{urun_id:u.id,ad:u.ad,birim:u.birim,fiyat:u.fiyat??null,adet:q}}).filter(Boolean);
+  if(!kalemler.length){flash($("sf-msg"),"En az bir ürün seçin.",true);return}
+  $("sf-gonder").disabled=true;
+  const body={kurum_id,kalemler,teslim_tarihi:$("sf-tarih").value||null,notlar:$("sf-not").value.trim()||null};if(admin)body.durum="onaylandi";
+  const {error}=await sb.from("siparisler").insert(body);
+  if(error){flash($("sf-msg"),hataMetni(error),true);$("sf-gonder").disabled=false;return}
+  S.sepet={};$("sf-tarih").value="";$("sf-not").value="";$("sf-ara").value="";
+  flash($("sf-msg"),admin?"Sipariş kaydedildi.":"Siparişiniz gönderildi. Onaylanınca durumu burada görünecek.");yukle()};
+
+// ---------- ürün kataloğu (yönetici) ----------
+function renderUrunler(){
+  $("u-katlist").innerHTML=[...new Set(S.urunler.map(u=>u.kategori).filter(Boolean))].map(k=>`<option value="${esc(k)}">`).join("");
+  $("u-list").innerHTML=S.urunHata?'<div class="empty">Ürün tabloları veritabanında henüz yok. README\'deki SQL\'i yeniden çalıştırın.</div>'
+   :!S.urunler.length?'<div class="empty">Henüz ürün yok. Sağdaki formdan ilk ürünü ekleyin.</div>'
+   :S.urunler.map(u=>{const sat=S.siparisler.filter(x=>x.durum!=="iptal").reduce((a,x)=>a+x.kalemler.filter(k=>k.urun_id===u.id).reduce((b,k)=>b+k.adet,0),0);
+    return `<div class="krow ${u.aktif?"":"pasif"}"><div><strong>${esc(u.ad)}</strong><span>${[u.kategori,u.birim,u.fiyat!=null?TL(u.fiyat):"",u.aciklama].filter(Boolean).map(esc).join(" · ")}</span>
+      <div class="kst"><span>${u.aktif?"Satışta":"Satışta değil"}</span><span>${sat} ${esc(u.birim)} sipariş edildi</span></div></div>
+      <div class="row" style="gap:0"><button class="ghost" data-uedit="${u.id}">Düzenle</button><button class="ghost danger" data-usil="${u.id}">Sil</button></div>
+      ${S.confirm==="u"+u.id?`<div class="confirm">${esc(u.ad)} silinsin mi? Eski siparişlerde adı görünmeye devam eder. <button class="danger" data-usilok="${u.id}">Evet, sil</button><button data-delno="1">Vazgeç</button></div>`:""}</div>`}).join("");
+}
+function uSifirla(){$("f-urun").reset();$("u-aktif").checked=true;S.uEdit=null;$("u-btn").textContent="Ürün ekle";$("uf-h").textContent="Ürün ekle";$("u-iptal").hidden=true}
+$("u-iptal").onclick=uSifirla;
+$("f-urun").addEventListener("submit",async e=>{e.preventDefault();
+  const f=$("u-fiyat").value;
+  const body={ad:$("u-ad").value.trim(),kategori:$("u-kat").value.trim()||null,birim:$("u-birim").value,fiyat:f===""?null:Number(f),aciklama:$("u-acik").value.trim()||null,aktif:$("u-aktif").checked};
+  if(!body.ad)return;
+  const {error}=S.uEdit?await sb.from("urunler").update(body).eq("id",S.uEdit):await sb.from("urunler").insert(body);
+  if(error){flash($("u-msg"),hataMetni(error),true);return}
+  flash($("u-msg"),(S.uEdit?"Güncellendi: ":"Eklendi: ")+body.ad);uSifirla();yukle()});
+
 // ---------- tıklamalar ----------
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;const d=b.dataset;
-  if(d.m){const [yy,mm]=d.m.split("-").map(Number);if(S.gorunum==="takvim"){S.ay=yy*12+mm-1;render()}else{const el=document.getElementById("m-"+d.m);if(el)el.scrollIntoView({block:"start"})}}
+  if(d.sekme){S.sekme=d.sekme;S.confirm=null;render();window.scrollTo({top:0})}
+  else if(d.q){const q=Math.max(0,(S.sepet[d.q]||0)+Number(d.d));S.sepet[d.q]=q;renderSiparis()}
+  else if(d.ssil){S.confirm="s"+d.ssil;renderSiparis()}
+  else if(d.ssilok){S.confirm=null;const {error}=await sb.from("siparisler").delete().eq("id",d.ssilok);if(error)flash($("sf-msg"),hataMetni(error),true);yukle()}
+  else if(d.uedit){const u=S.urunler.find(x=>x.id===d.uedit);if(!u)return;S.uEdit=u.id;$("u-ad").value=u.ad;$("u-kat").value=u.kategori||"";$("u-birim").value=u.birim;
+    $("u-fiyat").value=u.fiyat??"";$("u-acik").value=u.aciklama||"";$("u-aktif").checked=u.aktif;$("u-btn").textContent="Güncelle";$("uf-h").textContent="Ürünü düzenle";$("u-iptal").hidden=false;$("u-ad").focus()}
+  else if(d.usil){S.confirm="u"+d.usil;renderUrunler()}
+  else if(d.usilok){S.confirm=null;const {error}=await sb.from("urunler").delete().eq("id",d.usilok);if(error)flash($("u-msg"),hataMetni(error),true);yukle()}
+  else if(d.m){const [yy,mm]=d.m.split("-").map(Number);if(S.gorunum==="takvim"){S.ay=yy*12+mm-1;render()}else{const el=document.getElementById("m-"+d.m);if(el)el.scrollIntoView({block:"start"})}}
   else if(d.ay){S.ay+=Number(d.ay);render()}
   else if(d.onay||d.iptal){const {error}=await sb.from("denemeler").update({durum:d.onay?"onaylandi":"iptal"}).eq("id",d.onay||d.iptal);if(error)flash($("msg"),hataMetni(error),true);yukle()}
   else if(d.edit){const x=S.denemeler.find(y=>y.id===d.edit);if(!x)return;S.editId=x.id;S.editKurum=x.kurum_id;

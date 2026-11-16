@@ -63,7 +63,7 @@ $("l-unuttum").onclick=async()=>{const email=$("l-email").value.trim().toLowerCa
   if(!email){flash(msg,"Önce e-postanızı yazın.",true);return}
   const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
   flash(msg,error?hataMetni(error):"Şifre yenileme bağlantısı e-postanıza gönderildi.",!!error)};
-async function cikis(){if(S.kanal)sb.removeChannel(S.kanal);S.kanal=null;await sb.auth.signOut();goster("v-login");setMod("giris")}
+async function cikis(){S.rol=null;S.email="";if(S.kanal)sb.removeChannel(S.kanal);S.kanal=null;await sb.auth.signOut();goster("v-login");setMod("giris")}
 $("cikis").onclick=cikis;$("cikis2").onclick=cikis;
 
 sb.auth.onAuthStateChange((ev,session)=>{

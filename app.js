@@ -84,6 +84,8 @@ async function basla(){
 }
 function kur(){
   const admin=S.rol==="admin";
+  $("yukle-hint").textContent=admin?"Sütunlar: Kurum, Tarih, Deneme, Sınıf, Öğrenci, Not. Kurum adı sistemdeki adla aynı olmalı. Yüklenen denemeler onaylı olarak eklenir."
+    :"Sütunlar: Tarih, Deneme, Sınıf, Öğrenci, Not. Yüklenen denemeler sipariş olarak onaya gider.";
   $("who").textContent=(admin?"Yönetici · ":"")+S.email;
   $("p-siparis").hidden=!admin;$("p-kurumlar").hidden=!admin;$("ksec-wrap").hidden=!admin;$("fk-wrap").hidden=!admin;
   $("fkurum").required=admin;
@@ -250,6 +252,63 @@ $("f-kurum").addEventListener("submit",async e=>{
   if(error){flash($("k-msg"),hataMetni(error),true);return}
   flash($("k-msg"),(kEdit?"Güncellendi: ":"Eklendi: ")+body.ad+". Kurum "+body.email+" ile \"İlk kez giriş\" yapabilir.");kSifirla();yukle();
 });
+
+// ---------- Excel'den toplu yükleme ----------
+let yuklenecek=[];
+const norm=v=>String(v??"").trim().toLocaleLowerCase("tr").replace(/[ıi̇]/g,"i").replace(/\s+/g," ");
+const BASLIK={kurum:["kurum","kurum adı","okul","okul adı"],tarih:["tarih","deneme tarihi"],ad:["deneme","deneme adı","yayın","deneme adı / yayın","ad"],sinif:["sınıf","sinif","seviye"],ogrenci:["öğrenci","öğrenci sayısı","ogrenci","adet","kişi"],notlar:["not","notlar","açıklama"]};
+function tarihCoz(v){
+  if(v instanceof Date&&!isNaN(v))return v.getFullYear()+"-"+String(v.getMonth()+1).padStart(2,"0")+"-"+String(v.getDate()).padStart(2,"0");
+  if(typeof v==="number"&&v>20000&&v<80000){const d=new Date(Date.UTC(1899,11,30)+v*864e5);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0")}
+  const s=String(v??"").trim();let m=s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+  if(m){let y=Number(m[3]);if(y<100)y+=2000;const mo=Number(m[2]),d=Number(m[1]);if(mo>=1&&mo<=12&&d>=1&&d<=31)return y+"-"+String(mo).padStart(2,"0")+"-"+String(d).padStart(2,"0")}
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return m[1]+"-"+m[2].padStart(2,"0")+"-"+m[3].padStart(2,"0");
+  return null}
+function excelOku(file){
+  if(!window.XLSX){flash($("yukle-msg"),"Excel okuyucu yüklenemedi. İnternet bağlantınızı kontrol edip sayfayı yenileyin.",true);return}
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const wb=XLSX.read(r.result,{type:"array",cellDates:true});const sh=wb.Sheets[wb.SheetNames[0]];
+    const satir=XLSX.utils.sheet_to_json(sh,{header:1,defval:"",raw:true}).filter(a=>a.some(c=>String(c).trim()!==""));
+    if(satir.length<2){flash($("yukle-msg"),"Dosyada başlık satırından sonra veri bulunamadı.",true);return}
+    const bas=satir[0].map(norm);const col={};
+    for(const [k,adlar] of Object.entries(BASLIK)){const i=bas.findIndex(b=>adlar.map(norm).includes(b));if(i>=0)col[k]=i}
+    if(col.tarih===undefined){flash($("yukle-msg"),"\"Tarih\" sütunu bulunamadı. Örnek şablondaki başlıkları kullanın.",true);return}
+    const admin=S.rol==="admin";if(admin&&col.kurum===undefined){flash($("yukle-msg"),"\"Kurum\" sütunu bulunamadı.",true);return}
+    const kmap=new Map(S.kurumlar.map(k=>[norm(k.ad),k.id]));
+    yuklenecek=satir.slice(1).map((a,i)=>{const g=k=>col[k]===undefined?"":a[col[k]];const hatalar=[];
+      const tarih=tarihCoz(g("tarih"));if(!tarih)hatalar.push("Tarih okunamadı");
+      let kurum_id=S.kurumId,kurumAd=admin?String(g("kurum")).trim():kAd(S.kurumId);
+      if(admin){kurum_id=kmap.get(norm(kurumAd))||null;if(!kurum_id)hatalar.push(kurumAd?"Kurum sistemde yok":"Kurum boş")}
+      const og=String(g("ogrenci")).replace(/\D/g,"");
+      return {satir:i+2,kurumAd,hatalar,veri:{kurum_id,tarih,ad:String(g("ad")).trim()||null,sinif:String(g("sinif")).trim()||null,ogrenci:og?Number(og):null,notlar:String(g("notlar")).trim()||null,...(admin?{durum:"onaylandi"}:{})}}});
+    onizleGoster();
+  }catch(err){flash($("yukle-msg"),"Dosya okunamadı: "+err.message,true)}};
+  r.readAsArrayBuffer(file)}
+function onizleGoster(){
+  const iyi=yuklenecek.filter(x=>!x.hatalar.length),kotu=yuklenecek.length-iyi.length;const admin=S.rol==="admin";
+  $("onizle").hidden=false;
+  $("onizle-ozet").textContent=`${yuklenecek.length} satır okundu: ${iyi.length} deneme eklenmeye hazır`+(kotu?`, ${kotu} satırda hata var (bunlar eklenmeyecek).`:".");
+  $("onizle-tablo").innerHTML=`<tr><th>Satır</th>${admin?"<th>Kurum</th>":""}<th>Tarih</th><th>Deneme</th><th>Sınıf</th><th>Öğrenci</th><th>Durum</th></tr>`+
+    yuklenecek.map(x=>`<tr class="${x.hatalar.length?"hata":""}"><td>${x.satir}</td>${admin?`<td>${esc(x.kurumAd)}</td>`:""}<td>${x.veri.tarih?tarihYaz(x.veri.tarih).replace(/ \S+$/,""):"—"}</td><td>${esc(x.veri.ad||"")}</td><td>${esc(x.veri.sinif||"")}</td><td>${x.veri.ogrenci??""}</td>
+      ${x.hatalar.length?`<td class="e">${x.hatalar.join(", ")}</td>`:"<td>Hazır</td>"}</tr>`).join("");
+  $("yukle-btn").textContent=`${iyi.length} denemeyi ekle`;$("yukle-btn").disabled=!iyi.length}
+$("xlsdosya").onchange=e=>{const f=e.target.files[0];if(f)excelOku(f);e.target.value=""};
+$("yukle-iptal").onclick=()=>{yuklenecek=[];$("onizle").hidden=true};
+$("yukle-btn").onclick=async()=>{
+  const iyi=yuklenecek.filter(x=>!x.hatalar.length).map(x=>x.veri);if(!iyi.length)return;
+  $("yukle-btn").disabled=true;
+  const {error}=await sb.from("denemeler").insert(iyi);
+  if(error){flash($("yukle-msg"),hataMetni(error),true);$("yukle-btn").disabled=false;return}
+  flash($("yukle-msg"),iyi.length+" deneme eklendi"+(S.rol==="admin"?".":" ve onaya gönderildi."));
+  yuklenecek=[];$("onizle").hidden=true;S.yil=egitimYili(iyi[0].tarih);yukle()};
+$("sablon").onclick=()=>{
+  const admin=S.rol==="admin";const k=(S.kurumlar[0]||{}).ad||"Atatürk Ortaokulu";
+  const rows=admin?[["Kurum","Tarih","Deneme","Sınıf","Öğrenci","Not"],[k,"15.12.2026","LGS Deneme 4","8. sınıf",35,"Sabah 09:30"]]
+    :[["Tarih","Deneme","Sınıf","Öğrenci","Not"],["15.12.2026","LGS Deneme 4","8. sınıf",35,"Sabah 09:30"]];
+  if(window.XLSX){const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=rows[0].map(()=>({wch:18}));XLSX.utils.book_append_sheet(wb,ws,"Denemeler");XLSX.writeFile(wb,"deneme-yukleme-sablonu.xlsx");return}
+  const blob=new Blob(["\ufeff"+rows.map(a=>a.join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="deneme-yukleme-sablonu.csv";document.body.appendChild(a);a.click();a.remove()};
 
 // ---------- tıklamalar ----------
 document.addEventListener("click",async e=>{

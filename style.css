@@ -47,7 +47,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .stack{display:grid;gap:20px;min-width:0}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:16px;box-shadow:var(--shadow);min-width:0}
 .panel h2{font-size:19px;font-weight:600}
-aside .panel{position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
+aside{display:grid;gap:20px;min-width:0}
 
 /* uyarılar */
 .alerts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
@@ -201,3 +201,12 @@ details.panel[open] summary::after{content:" −"}
 .brand-ad{font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:-.01em}
 .brand-ad b{font-weight:800;color:#ffcf5a;margin-left:2px}
 .logo-login{height:52px;width:auto;display:block;margin-bottom:10px}
+
+.filebtn{display:inline-flex;align-items:center;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft)}
+.filebtn:hover{filter:brightness(1.05)}
+.tablo{overflow:auto;max-height:280px;border:1px solid var(--line);border-radius:10px}
+.tablo table{border-collapse:collapse;width:100%;font-size:12.5px}
+.tablo th,.tablo td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.tablo th{position:sticky;top:0;background:var(--field);font-weight:600}
+.tablo tr.hata td{background:var(--crit-soft)}
+.tablo td.e{color:var(--crit);white-space:normal;min-width:140px}

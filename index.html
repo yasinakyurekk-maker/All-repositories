@@ -122,6 +122,21 @@
           </form>
           <div class="store" id="store"></div>
         </section>
+        <section class="panel" aria-labelledby="yukle-h">
+          <h2 id="yukle-h">Excel'den toplu yükle</h2>
+          <p class="hint" id="yukle-hint"></p>
+          <div class="row">
+            <label class="filebtn" for="xlsdosya">Excel dosyası seç</label>
+            <input id="xlsdosya" type="file" accept=".xlsx,.xls,.csv" hidden>
+            <button type="button" class="linkbtn" id="sablon">Örnek şablonu indir</button>
+          </div>
+          <div id="onizle" hidden style="display:grid;gap:10px">
+            <div class="sonuc" id="onizle-ozet"></div>
+            <div class="tablo"><table id="onizle-tablo"></table></div>
+            <div class="row"><button class="primary" type="button" id="yukle-btn">Ekle</button><button type="button" id="yukle-iptal">Vazgeç</button></div>
+          </div>
+          <div class="msg" id="yukle-msg" role="status"></div>
+        </section>
       </aside>
     </div>
   </div>
@@ -142,6 +157,7 @@
   </section>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>

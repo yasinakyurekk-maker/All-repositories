@@ -572,6 +572,13 @@ setInterval(()=>{if(S.rol)render()},60*60*1000);
 
 basla();
 
+// Bazı görüntüleyiciler (uygulama içi önizleme, sandbox) form gönderimini engeller.
+// Düğme ve Enter tuşunu doğrudan bizim işleyicimize bağla.
+function formuGonder(form){if(!form.checkValidity()){form.reportValidity();return}
+  form.dispatchEvent(new Event("submit",{cancelable:true}))}
+document.addEventListener("click",e=>{const b=e.target.closest('button[type="submit"]');if(!b||!b.form)return;e.preventDefault();formuGonder(b.form)},true);
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"||e.isComposing)return;const el=e.target;if(!el.form||el.tagName!=="INPUT")return;e.preventDefault();formuGonder(el.form)},true);
+
 </script>
 </body>
 </html>

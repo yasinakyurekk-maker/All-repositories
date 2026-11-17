@@ -64,7 +64,8 @@ function ilSecenekleri(secili, bosEtiket) {
 }
 function meta(baslik, aciklama) {
   document.title = baslik ? `${baslik} | ${SITE}` : `${SITE} | Ücretsiz kedi ve köpek sahiplendirme ilanları`;
-  if (aciklama) $('meta[name="description"]').setAttribute("content", aciklama);
+  const md = $('meta[name="description"]');
+  if (aciklama && md) md.setAttribute("content", aciklama);
 }
 function sayfa(html) { const m = $("#icerik"); m.innerHTML = html; }
 

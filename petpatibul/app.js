@@ -192,7 +192,7 @@ async function anaSayfa() {
   sayfa(`
   <section class="kahraman"><div class="kap kahraman-in">
     <div class="kahraman-yazi">
-      <span class="rozet">Satış yok, yalnızca ücretsiz sahiplendirme</span>
+      <span class="rozet">Hayvan satışı yok, yalnızca ücretsiz sahiplendirme</span>
       <h1>Bir dost sahiplen,<br>bir hayat değiştir.</h1>
       <p>Yuva arayan kedi, köpek ve diğer dostlarımızı bulunduğun ile göre keşfet. Tüm ilanlar yayına girmeden önce kontrol edilir.</p>
       <form class="arama" id="arama">
@@ -232,6 +232,17 @@ async function anaSayfa() {
       <div class="adim"><span class="no">4</span><b>Yuvaya kavuş</b><span>Sahiplendikten sonra bakım rehberlerimizle yanındayız.</span></div>
     </div>
   </section>
+
+  <section class="kap bolum"><div class="ikili">
+    <div class="bant bant-bagis">
+      <div><span class="ust-yazi">SOKAK HAYVANLARI İÇİN BAĞIŞ</span><h2>Mama kabı boş kalmasın</h2><p>Bağışların sokaktaki dostlarımızın mamasına, aşısına ve tedavisine gider. Toplanan tutarları herkes görebilir.</p></div>
+      <div class="dugmeler"><a class="btn btn-ana" href="/bagis">Bağış yap</a></div>
+    </div>
+    <div class="bant bant-magaza">
+      <div><span class="ust-yazi">MAĞAZA</span><h2>Mama ve ekipman</h2><p>Yeni dostun için mama, kum, tasma, taşıma çantası ve oyuncak. Belirli tutar üstüne kargo bedava.</p></div>
+      <div class="dugmeler"><a class="btn" href="/magaza">Mağazaya git</a></div>
+    </div>
+  </div></section>
 
   <section class="kap bolum"><div class="bant bant-kayip">
     <div><span class="ust-yazi">KAYIP VE BULUNAN</span><h2>Dostunu mu kaybettin, sahipsiz birini mi buldun?</h2><p>Fotoğraf ve son görüldüğü yerle ücretsiz ilan ver.</p></div>
@@ -749,11 +760,13 @@ async function hesabimSayfasi() {
     <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Gönderdiğim başvurular</h2>
       ${(gon.data || []).length ? gon.data.map(g => `<div class="satir"><div class="satir-govde"><b>${g.ilanlar ? `<a href="/ilan/${g.ilanlar.id}">${esc(g.ilanlar.ad)}</a>` : "Kaldırılmış ilan"}</b><span class="bilgi">${tarih(g.created_at)}</span></div><span class="durum d-${g.durum}">${esc(BASVURU_DURUM[g.durum])}</span></div>`).join("") : `<p class="bilgi">Henüz başvuru yapmadın.</p>`}
     </section>
-    ${(od.data || []).length ? `<section class="kutu"><h2 style="font-size:22px;margin-bottom:8px">Ödemelerim</h2>
+    <div id="hesabim-ek"></div>
+    ${(od.data || []).length ? `<section class="kutu"><h2 style="font-size:22px;margin-bottom:8px">Öne çıkarma ödemelerim</h2>
       ${od.data.map(o => `<div class="satir"><div class="satir-govde"><b>${esc(o.paketler ? o.paketler.ad : o.paket_kod)}</b><span class="bilgi">${esc(o.ilanlar ? o.ilanlar.ad : "")} · ${tarih(o.created_at)} · ${tl(o.tutar)}</span></div><span class="durum d-${o.durum}">${esc(ODEME_DURUM[o.durum])}</span></div>`).join("")}
     </section>` : ""}
   </div>`);
 
+  if (window.hesabimEk) await hesabimEk($("#hesabim-ek"));
   $$("[data-kapat]").forEach(b => b.onclick = async () => {
     const d = b.dataset.durum;
     if (!confirm(d === "sahiplendi" ? "Harika! İlan kapatılacak ve listeden kalkacak. Onaylıyor musun?" : "İlan kaldırılacak. Bu işlem geri alınamaz. Emin misin?")) return;
@@ -807,27 +820,47 @@ async function oneCikarSayfasi(id) {
   $("#odeme-form").onsubmit = async e => {
     e.preventDefault(); const fd = new FormData(e.target), m = $(".mesaj", e.target), btn = $("button[type=submit]", e.target);
     btn.disabled = true; mesaj(m, "Güvenli ödeme sayfası hazırlanıyor…");
-    const { data, error } = await sb.functions.invoke("odeme-baslat", { body: { ilan_id: i.id, paket: fd.get("paket"), ad: fd.get("ad"), telefon: fd.get("telefon"), adres: fd.get("adres") } });
+    const { data, error } = await sb.functions.invoke("odeme-baslat", { body: { tip: "one_cikar", ilan_id: i.id, paket: fd.get("paket"), ad: fd.get("ad"), telefon: fd.get("telefon"), adres: fd.get("adres") } });
     btn.disabled = false;
-    if (error) {
-      let metin = error.message;
-      try { const j = await error.context.json(); if (j && j.hata) metin = j.hata; } catch (_) {}
-      return mesaj(m, metin, true);
-    }
-    $("#odeme-alani").innerHTML = `<iframe class="odeme-cerceve" src="https://www.paytr.com/odeme/guvenli/${encodeURIComponent(data.token)}" title="PayTR güvenli ödeme" allow="payment"></iframe>`;
+    if (error) return mesaj(m, await odemeHatasi(error), true);
+    odemeCercevesi($("#odeme-alani"), data.token);
   };
+}
+
+// Ödeme fonksiyonunun hata mesajını okunur hale getirir.
+async function odemeHatasi(error) {
+  let metin = error.message;
+  try { const j = await error.context.json(); if (j && j.hata) metin = j.hata; } catch (_) {}
+  return metin;
+}
+// PayTR güvenli ödeme ekranını verilen alanda açar (öne çıkarma, sipariş ve bağış için ortak).
+function odemeCercevesi(el, token) {
+  el.innerHTML = `<iframe class="odeme-cerceve" src="https://www.paytr.com/odeme/guvenli/${encodeURIComponent(token)}" title="PayTR güvenli ödeme" allow="payment"></iframe>`;
+  el.scrollIntoView({ block: "start" });
 }
 
 async function odemeSonucSayfasi(sonuc) {
   meta(sonuc === "basarili" ? "Ödeme alındı" : "Ödeme tamamlanamadı");
   // PayTR bu sayfayı iframe içinde açar; ana pencereye taşı.
   if (window.top !== window.self) { try { window.top.location.href = location.href; return; } catch (_) {} }
+  const tip = new URLSearchParams(location.search).get("tip") || "one_cikar";
+  if (sonuc === "basarili" && tip === "siparis" && window.sepetiBosalt) sepetiBosalt();
+  const T = {
+    one_cikar: ["Teşekkürler, ödemen alındı", "İlanın birkaç dakika içinde öne çıkmış olarak görünecek.", "/hesabim", "Hesabıma git"],
+    siparis: ["Teşekkürler, siparişin alındı", "Siparişin hazırlanınca kargo takip numarasını Hesabım sayfasında görebilirsin.", "/hesabim", "Siparişlerime git"],
+    bagis: ["Bağışın için çok teşekkürler", "Bağışın sokaktaki dostlarımızın mamasına ve tedavisine gidecek.", "/bagis", "Bağış sayfasına dön"],
+  }[tip] || ["Teşekkürler, ödemen alındı", "", "/", "Ana sayfaya git"];
   sayfa(sonuc === "basarili"
-    ? `<div class="kap bos-durum"><h1>Teşekkürler, ödemen alındı</h1><p>İlanın birkaç dakika içinde öne çıkmış olarak görünecek.</p><p><a class="btn btn-ana" href="/hesabim">Hesabıma git</a></p></div>`
-    : `<div class="kap bos-durum"><h1>Ödeme tamamlanamadı</h1><p>Kartından para çekilmedi. Tekrar deneyebilirsin.</p><p><a class="btn" href="/hesabim">Hesabıma dön</a></p></div>`);
+    ? `<div class="kap bos-durum"><h1>${T[0]}</h1><p>${T[1]}</p><p><a class="btn btn-ana" href="${T[2]}">${T[3]}</a></p></div>`
+    : `<div class="kap bos-durum"><h1>Ödeme tamamlanamadı</h1><p>Kartından para çekilmedi. Tekrar deneyebilirsin.</p><p><a class="btn" href="${tip === "siparis" ? "/sepet" : tip === "bagis" ? "/bagis" : "/hesabim"}">Geri dön</a></p></div>`);
 }
 
 // ---------- yönetim ----------
+function yonetimSekmeleri(aktif) {
+  return `<nav class="hap-grup" aria-label="Yönetim bölümleri" style="margin-bottom:24px">${[
+    ["/yonetim", "İlanlar ve şikayetler"], ["/yonetim/urunler", "Ürünler"], ["/yonetim/siparisler", "Siparişler"], ["/yonetim/bagislar", "Bağışlar"],
+  ].map(([h, a]) => `<a class="hap" href="${h}"${h === aktif ? ' aria-current="page"' : ""}>${a}</a>`).join("")}</nav>`;
+}
 async function yonetimSayfasi() {
   if (girisGerekli()) return;
   if (!S.yonetici) { sayfa(`<div class="kap bos-durum"><h1>Bu sayfa yalnızca yöneticiler içindir</h1></div>`); return; }
@@ -840,7 +873,8 @@ async function yonetimSayfasi() {
   ]);
   if (bek.error) throw bek.error;
   sayfa(`<div class="kap dar">
-    <h1 style="font-size:36px;font-weight:900;margin-bottom:24px">Yönetim</h1>
+    <h1 style="font-size:36px;font-weight:900;margin-bottom:16px">Yönetim</h1>
+    ${yonetimSekmeleri("/yonetim")}
     <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Onay bekleyen ilanlar (${bek.data.length})</h2>
       ${bek.data.length ? bek.data.map(x => `<div class="satir">
         <div class="satir-foto">${x.fotolar && x.fotolar[0] ? `<img src="${esc(x.fotolar[0])}" alt="">` : ""}</div>
@@ -900,7 +934,9 @@ function metinSayfasi(ad) {
       <h2>İlan vermek ücretli mi?</h2><p>Hayır, ilan vermek ücretsizdir. İlanını daha çok kişiye göstermek istersen ücretli öne çıkarma paketlerinden birini seçebilirsin.</p>
       <h2>Öne çıkarma nedir?</h2><p>Öne çıkarılan ilanlar seçilen süre boyunca ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir.</p>
       <h2>İlanım neden hemen yayına girmedi?</h2><p>Sahte ve satış ilanlarını engellemek için her ilan ekibimiz tarafından kontrol edilir. Bu genellikle kısa sürer.</p>
-      <h2>Kayıp hayvanımı nasıl ilan ederim?</h2><p>"Ücretsiz ilan ver" sayfasında "Kaybettim" seçeneğini seç, fotoğraf ve kaybolduğu yeri ekle.</p>`],
+      <h2>Kayıp hayvanımı nasıl ilan ederim?</h2><p>"Ücretsiz ilan ver" sayfasında "Kaybettim" seçeneğini seç, fotoğraf ve kaybolduğu yeri ekle.</p>
+      <h2>Mağazadan aldığım ürün ne zaman gelir?</h2><p>Siparişler genellikle 1-3 iş günü içinde kargoya verilir. Kargo takip numarasını Hesabım sayfasında görebilirsin.</p>
+      <h2>Bağışlarım nereye gidiyor?</h2><p>Bağışlar sokak hayvanlarının mama, aşı, kısırlaştırma ve tedavi masrafları için kullanılır. Toplanan tutarlar bağış sayfasında herkese açık olarak görünür.</p>`],
     kvkk: ["KVKK aydınlatma metni", `<p class="uyari">[Bu sayfaya bir hukukçu tarafından hazırlanmış KVKK aydınlatma metni eklenecek: hangi kişisel verilerin (e-posta, telefon, ad soyad, başvuru bilgileri) hangi amaçla işlendiği, kimlerle paylaşıldığı ve kullanıcının hakları.]</p>`],
     "kullanim-kosullari": ["Kullanım koşulları", `<p class="uyari">[Bu sayfaya kullanım koşulları ve öne çıkarma paketleri için mesafeli satış sözleşmesi eklenecek. Temel kurallar: hayvan satışı ve ücret talebi yasaktır, ilanlar onaydan geçer, kurallara uymayan ilanlar kaldırılır.]</p>`],
   };
@@ -913,4 +949,6 @@ function metinSayfasi(ad) {
 sb.auth.onAuthStateChange((olay) => {
   if (olay === "PASSWORD_RECOVERY") git("/giris#type=recovery", true);
 });
-oturumYukle().then(yonlendir);
+// Mağaza ve bağış adresleri magaza.js ile eklenir; sayfa tamamen yüklenince başla.
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => oturumYukle().then(yonlendir));
+else setTimeout(() => oturumYukle().then(yonlendir), 0);

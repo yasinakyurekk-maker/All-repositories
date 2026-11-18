@@ -6,7 +6,9 @@
 - **Üye**: e-postayla üye olur, fotoğraflı ilan verir, ilanlara başvurur. Başvuranın telefonu yalnızca ilan sahibine görünür.
 - **İlan sahibi**: gelen başvuruları Hesabım sayfasında görür, kabul eder ya da reddeder, ilanı "Sahiplendi" olarak kapatır. İsterse ilanını ücretli olarak **öne çıkarır**.
 - **Öne çıkan (reklam veren) ilanlar**: ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir. Süre bitince kendiliğinden normale döner.
-- **Yönetici**: ilanları yayına alır veya reddeder, şikayetleri inceler, öne çıkarma paketlerinin fiyatlarını değiştirir, ödemeleri görür.
+- **Mağaza** (`/magaza`): mama, ekipman, oyuncak ve bakım ürünleri. Sepet bu tarayıcıda tutulur, ödeme PayTR ile alınır. Ödeme onaylanınca stok kendiliğinden düşer. Belirli tutarın üstünde kargo bedava.
+- **Bağış** (`/bagis`): sokak hayvanları için genel bağış ya da kampanyaya bağış (örn. kış maması, kısırlaştırma fonu). Toplanan tutarlar ve son bağışçılar herkese açık; bağışçı isterse adını gizleyebilir.
+- **Yönetici**: ilanları yayına alır veya reddeder, şikayetleri inceler, öne çıkarma paketlerinin fiyatlarını değiştirir, ödemeleri görür. Ayrıca ürün ekler ve stok günceller, siparişlerin durumunu ve kargo takip numarasını girer, bağış kampanyaları açar ve gelen bağışları görür.
 
 Veriler Supabase'de durur, site Vercel'de yayınlanır, ödemeler PayTR ile alınır.
 
@@ -45,15 +47,29 @@ Sitede **Giriş yap > Üye ol** ile yönetici e-postanızla üye olun. Menüde *
 5. Test kartlarıyla deneyin. Her şey çalışınca `PAYTR_TEST_MODE=0` yapıp `supabase secrets set` komutunu tekrar çalıştırın.
 
 Paket fiyatları **Yönetim** sayfasından ya da Supabase'de `paketler` tablosundan değiştirilir. Başlangıç değerleri: 7 gün 99 TL, 30 gün 299 TL.
+Aynı PayTR hesabı mağaza siparişleri ve bağışlar için de kullanılır; ek kurulum gerekmez. Kargo ücreti (başlangıç 49,90 TL) ve ücretsiz kargo sınırı (750 TL) **Yönetim > Ürünler** sayfasından değiştirilir.
+
+### 6. Bağış (önemli)
+Türkiye'de halktan bağış toplamak 2860 sayılı Yardım Toplama Kanunu'na tabidir: bağışı bir **dernek veya vakıf** toplamalı ya da valilikten/kaymakamlıktan **yardım toplama izni** alınmalıdır. Şahıs veya şirket olarak izinsiz bağış toplamak suç sayılabilir. Bu yüzden bağış bölümü kapalı gelir.
+
+Seçenekler:
+- Bir hayvan hakları derneği kurmak ya da var olan bir dernekle anlaşıp ödemeleri derneğin PayTR hesabına almak (önerilen).
+- Yardım toplama izni almak.
+
+Hukuki durum netleşince `config.js` içinde `BAGIS_AKTIF: true` yapın. Bağış kampanyalarını **Yönetim > Bağışlar** sayfasından açabilirsiniz.
+
+### 7. Mağaza için yasal gereklilikler
+Ürün satışı için şirket (en azından şahıs şirketi), e-fatura/e-arşiv, mesafeli satış sözleşmesi ve ön bilgilendirme formu gerekir. Mama satıyorsanız ürünlerin Tarım ve Orman Bakanlığı kayıtlı olması gerekir.
 
 ## Dosyalar
 | Dosya | Ne işe yarar |
 |---|---|
-| `index.html`, `style.css`, `app.js` | Sitenin kendisi |
+| `index.html`, `style.css`, `app.js` | Sitenin kendisi: sahiplendirme, ilanlar, hesap ve ilan yönetimi |
+| `magaza.js` | Mağaza, sepet, bağış sayfaları ve bunların yönetim ekranları |
 | `config.js` | Supabase adresi ve ödeme anahtarı (açık/kapalı) |
 | `supabase.sql` | Tablolar, güvenlik kuralları, fotoğraf deposu |
-| `supabase/functions/odeme-baslat` | PayTR ödeme sayfasını açar |
-| `supabase/functions/odeme-bildirim` | PayTR ödemeyi onaylayınca ilanı öne çıkarır |
+| `supabase/functions/odeme-baslat` | PayTR ödeme sayfasını açar (öne çıkarma, sipariş, bağış); tutarı veritabanından hesaplar |
+| `supabase/functions/odeme-bildirim` | PayTR ödemeyi onaylayınca ilanı öne çıkarır, siparişi onaylayıp stoğu düşer ya da bağışı kaydeder |
 | `vercel.json` | Tüm adreslerin siteye yönlenmesi |
 
 ## Yayın öncesi yapılacaklar

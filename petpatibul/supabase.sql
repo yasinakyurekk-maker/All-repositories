@@ -1,4 +1,4 @@
--- petpatibul.com — veritabanı kurulumu
+-- petpatibul.com — veritabanı kurulumu (sahiplendirme, öne çıkarma, mağaza, bağış)
 -- Supabase panelinde: SQL Editor > New query > bu dosyanın tamamını yapıştırın > Run.
 -- EN ALTTAKİ satırda yonetici@ornek.com yerine kendi e-postanızı yazın.
 -- Dosya tekrar çalıştırılabilir; mevcut veriler silinmez.
@@ -229,6 +229,154 @@ create policy f_yukle on storage.objects for insert to authenticated
 drop policy if exists f_sil on storage.objects;
 create policy f_sil on storage.objects for delete to authenticated
   using (bucket_id = 'ilan-fotolari' and ((storage.foldername(name))[1] = auth.uid()::text or is_admin()));
+
+-- ---------- AYARLAR (kargo ücreti, en az bağış vb.) ----------
+create table if not exists ayarlar (
+  anahtar text primary key,
+  deger numeric not null
+);
+alter table ayarlar enable row level security;
+drop policy if exists a_oku on ayarlar;
+create policy a_oku on ayarlar for select to anon, authenticated using (true);
+drop policy if exists a_yaz on ayarlar;
+create policy a_yaz on ayarlar for all to authenticated using (is_admin()) with check (is_admin());
+insert into ayarlar(anahtar, deger) values
+  ('kargo_ucreti', 49.90),          -- TL
+  ('ucretsiz_kargo_esigi', 750),    -- bu tutar ve üstü kargo bedava
+  ('en_az_bagis', 10)               -- TL
+on conflict (anahtar) do nothing;
+
+-- ---------- MAĞAZA: mama ve ekipman ----------
+create table if not exists urunler (
+  id uuid primary key default gen_random_uuid(),
+  ad text not null check (char_length(ad) between 1 and 120),
+  kategori text not null check (kategori in ('mama','ekipman','oyuncak','bakim')),
+  tur text not null default 'hepsi' check (tur in ('kedi','kopek','kus','diger','hepsi')),
+  marka text,
+  aciklama text check (char_length(aciklama) <= 6000),
+  fiyat numeric(10,2) not null check (fiyat > 0),
+  eski_fiyat numeric(10,2) check (eski_fiyat is null or eski_fiyat > 0),
+  stok integer not null default 0 check (stok >= 0),
+  fotolar text[] not null default '{}',
+  aktif boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index if not exists urunler_kategori on urunler(aktif, kategori, tur);
+alter table urunler enable row level security;
+drop policy if exists ur_oku on urunler;
+create policy ur_oku on urunler for select to anon, authenticated using (aktif or is_admin());
+drop policy if exists ur_yaz on urunler;
+create policy ur_yaz on urunler for all to authenticated using (is_admin()) with check (is_admin());
+
+-- Siparişleri yalnızca ödeme fonksiyonu açar; fiyatlar sunucuda veritabanından hesaplanır.
+create table if not exists magaza_siparisleri (
+  id uuid primary key default gen_random_uuid(),
+  siparis_no text not null unique,
+  kullanici_id uuid references auth.users(id) on delete set null,
+  kalemler jsonb not null check (jsonb_typeof(kalemler) = 'array' and jsonb_array_length(kalemler) > 0),
+  ara_toplam numeric(10,2) not null,
+  kargo numeric(10,2) not null default 0,
+  toplam numeric(10,2) not null,
+  ad text not null, telefon text not null, email text not null,
+  adres text not null, il text not null, ilce text,
+  durum text not null default 'bekliyor'
+    check (durum in ('bekliyor','odendi','hazirlaniyor','kargoda','teslim','iptal','basarisiz')),
+  kargo_firma text, kargo_takip text, hata text,
+  created_at timestamptz not null default now(),
+  odendi_at timestamptz
+);
+create index if not exists magaza_siparisleri_tarih on magaza_siparisleri(created_at desc);
+alter table magaza_siparisleri enable row level security;
+drop policy if exists ms_oku on magaza_siparisleri;
+create policy ms_oku on magaza_siparisleri for select to authenticated using (kullanici_id = auth.uid() or is_admin());
+drop policy if exists ms_guncelle on magaza_siparisleri;
+create policy ms_guncelle on magaza_siparisleri for update to authenticated using (is_admin()) with check (is_admin());
+
+-- ---------- SOKAK HAYVANLARI İÇİN BAĞIŞ ----------
+create table if not exists bagis_kampanyalari (
+  id uuid primary key default gen_random_uuid(),
+  baslik text not null check (char_length(baslik) between 1 and 120),
+  aciklama text check (char_length(aciklama) <= 6000),
+  hedef numeric(12,2) check (hedef is null or hedef > 0),
+  foto text,
+  aktif boolean not null default true,
+  sira integer not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table bagis_kampanyalari enable row level security;
+drop policy if exists bk_oku on bagis_kampanyalari;
+create policy bk_oku on bagis_kampanyalari for select to anon, authenticated using (aktif or is_admin());
+drop policy if exists bk_yaz on bagis_kampanyalari;
+create policy bk_yaz on bagis_kampanyalari for all to authenticated using (is_admin()) with check (is_admin());
+
+create table if not exists bagislar (
+  id uuid primary key default gen_random_uuid(),
+  siparis_no text not null unique,
+  kampanya_id uuid references bagis_kampanyalari(id) on delete set null,   -- boş: genel bağış
+  kullanici_id uuid references auth.users(id) on delete set null,
+  ad text, gizli boolean not null default false,
+  email text not null,
+  mesaj text check (char_length(mesaj) <= 300),
+  tutar numeric(10,2) not null check (tutar > 0),
+  durum text not null default 'bekliyor' check (durum in ('bekliyor','odendi','basarisiz')),
+  hata text,
+  created_at timestamptz not null default now(),
+  odendi_at timestamptz
+);
+alter table bagislar enable row level security;
+drop policy if exists bg_oku on bagislar;
+create policy bg_oku on bagislar for select to authenticated using (kullanici_id = auth.uid() or is_admin());
+
+-- Herkese açık özetler: toplanan tutarlar ve son bağışçılar (e-posta gösterilmez).
+drop view if exists bagis_ozet;
+create view bagis_ozet as
+  select kampanya_id, sum(tutar)::numeric(12,2) as toplanan, count(*) as adet
+  from bagislar where durum = 'odendi' group by kampanya_id;
+drop view if exists son_bagislar;
+create view son_bagislar as
+  select id, kampanya_id,
+         case when gizli or coalesce(trim(ad), '') = '' then 'İsimsiz bağışçı' else ad end as ad,
+         tutar, mesaj, odendi_at
+  from bagislar where durum = 'odendi' order by odendi_at desc limit 30;
+grant select on bagis_ozet, son_bagislar to anon, authenticated;
+
+-- ---------- ÖDEME BİLDİRİMİ: öne çıkarma (PP), bağış (BG), mağaza siparişi (SP) ----------
+create or replace function odeme_isle(p_siparis text, p_basarili boolean, p_hata text default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare s magaza_siparisleri; k jsonb;
+begin
+  if p_siparis like 'PP%' then
+    perform odeme_onayla(p_siparis, p_basarili, p_hata);
+  elsif p_siparis like 'BG%' then
+    update bagislar
+      set durum = case when p_basarili then 'odendi' else 'basarisiz' end,
+          odendi_at = case when p_basarili then now() end,
+          hata = case when p_basarili then null else p_hata end
+      where siparis_no = p_siparis and durum = 'bekliyor';
+  elsif p_siparis like 'SP%' then
+    select * into s from magaza_siparisleri where siparis_no = p_siparis for update;
+    if not found or s.durum <> 'bekliyor' then return; end if;
+    if not p_basarili then
+      update magaza_siparisleri set durum = 'basarisiz', hata = p_hata where id = s.id;
+      return;
+    end if;
+    update magaza_siparisleri set durum = 'odendi', odendi_at = now() where id = s.id;
+    for k in select * from jsonb_array_elements(s.kalemler) loop
+      update urunler set stok = greatest(stok - (k->>'adet')::int, 0) where id = (k->>'urun_id')::uuid;
+    end loop;
+  end if;
+end $$;
+revoke all on function odeme_isle(text, boolean, text) from public, anon, authenticated;
+grant execute on function odeme_isle(text, boolean, text) to service_role;
+
+-- ---------- ÜRÜN VE KAMPANYA FOTOĞRAFLARI (yalnızca yönetici yükler) ----------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('magaza-fotolari', 'magaza-fotolari', true, 5242880, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do nothing;
+drop policy if exists mf_yukle on storage.objects;
+create policy mf_yukle on storage.objects for insert to authenticated with check (bucket_id = 'magaza-fotolari' and is_admin());
+drop policy if exists mf_sil on storage.objects;
+create policy mf_sil on storage.objects for delete to authenticated using (bucket_id = 'magaza-fotolari' and is_admin());
 
 -- >>> Kendi e-postanızı yazın <<<
 insert into yoneticiler(email) values (lower('yonetici@ornek.com')) on conflict do nothing;

@@ -1,5 +1,6 @@
 // petpatibul.com — PayTR ödeme bildirimi (Bildirim URL'si, 2. adım).
-// PayTR bu adrese POST atar. Hash doğrulanır, ödeme başarılıysa ilan öne çıkarılır.
+// PayTR bu adrese POST atar. Hash doğrulanır; ödeme başarılıysa ilan öne çıkarılır,
+// bağış "ödendi" olur ya da mağaza siparişi onaylanıp stok düşülür.
 // JWT doğrulaması KAPALI yayınlanmalı:  supabase functions deploy odeme-bildirim --no-verify-jwt
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
   const sb = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
   const basarili = durum === "success";
   const hata = basarili ? null : `${f.get("failed_reason_code") ?? ""} ${f.get("failed_reason_msg") ?? ""}`.trim();
-  const { error } = await sb.rpc("odeme_onayla", { p_siparis: siparisNo, p_basarili: basarili, p_hata: hata });
+  const { error } = await sb.rpc("odeme_isle", { p_siparis: siparisNo, p_basarili: basarili, p_hata: hata });
   if (error) return new Response("Veritabanı hatası", { status: 500 });   // PayTR bildirimi tekrar dener
 
   return new Response("OK", { headers: { "Content-Type": "text/plain" } }); // PayTR yalnızca "OK" bekler

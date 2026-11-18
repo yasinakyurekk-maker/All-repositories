@@ -4,5 +4,7 @@ window.AYAR = {
   SUPABASE_URL: "https://PROJE-KODUNUZ.supabase.co",
   SUPABASE_ANON_KEY: "BURAYA-anon-public-ANAHTARI",
   // PayTR hesabınız onaylanıp ödeme fonksiyonları kurulunca true yapın (README > 5. adım).
-  ODEME_AKTIF: false
+  ODEME_AKTIF: false,
+  // Bağış toplamak için dernek/vakıf olmanız ya da yardım toplama izni almanız gerekir (README > Bağış).
+  BAGIS_AKTIF: false
 };

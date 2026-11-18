@@ -248,7 +248,7 @@ details.panel[open] summary::after{content:" −"}
 .pill.teslim{background:var(--ok-soft);color:var(--ok)}
 .urow.pasif{opacity:.55}
 .sum b.tut{font-size:18px;padding-block:4px}
-@media (max-width:620px){.sum b.tut{font-size:12.5px;padding-block:5px;overflow-wrap:anywhere}}
+@media (max-width:620px){.sum b.tut{font-size:11.5px;letter-spacing:-.02em;padding-block:5px;white-space:nowrap}}
 
 /* yayın takvimi */
 .titem.kur{grid-template-columns:30px 58px minmax(0,1fr) auto}
@@ -285,3 +285,72 @@ details.panel[open] summary::after{content:" −"}
 .cal-day.sec{border-color:var(--accent);background:var(--accent-soft)}
 .cal-day.sec .cal-add{opacity:1;background:var(--accent);color:var(--surface)}
 @media (max-width:620px){.cal-add{display:none}}
+
+/* ürün sipariş formu */
+.sgec{justify-self:start}
+.sform{gap:22px}
+.sform-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--fg);padding-bottom:12px}
+.sform-head h2{font-size:24px;margin:2px 0 0}
+.sform-tarih{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.sbolum{display:grid;gap:12px}
+.sbolum h3{margin:0;font-size:16px;display:flex;align-items:center;gap:8px}
+.sbolum h3 span{width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--surface);display:grid;place-items:center;font-size:13px;font-family:var(--f-mono)}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.sabit{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--field);font-weight:600;font-size:15px}
+textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--fg);resize:vertical;box-sizing:border-box}
+textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.utablo{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.uthead,.utablo .urow{display:grid;grid-template-columns:minmax(0,1fr) 110px 112px 110px;gap:10px;align-items:center}
+.uthead{padding:8px 12px;background:var(--field);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.uthead span:nth-child(n+2){text-align:right}.uthead span:nth-child(3){text-align:center}
+.utablo .urunsec{border:0;border-radius:0;max-height:none;padding:0 6px 6px}
+.utablo .urow{padding:8px 6px;border-bottom:1px solid var(--line);border-radius:0}
+.utablo .urow:last-child{border-bottom:0}
+.ufiyat,.ututar{text-align:right;font-family:var(--f-mono);font-size:13.5px}
+.ututar{font-weight:700}
+.utablo .qty{justify-self:center}
+.sepet .label{margin-bottom:2px}
+.sepet{padding:10px 12px;border:1px dashed var(--line);border-radius:12px}
+.sgonder{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:2px solid var(--fg);padding-top:14px}
+.stoplam{display:flex;align-items:baseline;gap:14px;font-size:14px;color:var(--muted)}
+.stoplam b{font-size:24px;color:var(--fg);font-family:var(--f-display)}
+.sgonder .primary{min-width:220px}
+.sok{text-align:center;justify-items:center;padding:36px 20px}
+.sok h2{margin:0}
+.okicon{width:56px;height:56px;border-radius:50%;background:var(--ok);color:var(--surface);display:grid;place-items:center;font-size:28px;font-weight:700}
+@media (max-width:620px){
+  .uthead{display:none}
+  .utablo .urow{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ad ad" "fiyat qty" "tut tut"}
+  .utablo .uad{grid-area:ad}.utablo .ufiyat{grid-area:fiyat;text-align:left}.utablo .qty{grid-area:qty;justify-self:end}.utablo .ututar{grid-area:tut}
+  .utablo .ututar:empty{display:none}
+  .sgonder .primary{width:100%}
+}
+/* yazdırılabilir form */
+.sbaski{position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:50;overflow:auto;padding:24px 12px}
+.sbaski[hidden]{display:none}
+.sbaski-kutu{max-width:820px;margin:0 auto;background:#fff;color:#111;border-radius:14px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.sbaski-arac{display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px}
+.sbaski-arac button{width:auto;padding:8px 16px}
+.bform{display:grid;gap:16px;font-size:13.5px;color:#111}
+.bhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:2px solid #111;padding-bottom:10px}
+.bmarka{font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:12px;color:#555}
+.bhead h2{margin:2px 0 0;font-size:22px;color:#111}
+.bno{display:grid;gap:2px;text-align:right;font-size:12.5px;color:#555}.bno b{color:#111}
+.btab{width:100%;border-collapse:collapse}
+.btab th,.btab td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}
+.btab th{background:#f1f3f6;font-weight:600;font-size:12.5px}
+.bbilgi th{width:120px}
+.btab .r{text-align:right;white-space:nowrap}
+.bkal tfoot td{font-weight:700;background:#f7f8fa}
+.bnot{margin:0}
+.bimza{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:20px}
+.bimza div{border-top:1px solid #111;padding-top:6px;font-size:12.5px;color:#555;min-height:60px}
+.bimza span{color:#111}
+.toast{position:fixed;right:16px;bottom:16px;z-index:60;max-width:min(360px,calc(100vw - 32px));background:var(--fg);color:var(--surface);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);font-size:14px;font-weight:600}
+.toast[hidden]{display:none}
+@media print{
+  body.baski-acik>*:not(#sbaski){display:none!important}
+  body.baski-acik .sbaski{position:static;background:none;padding:0;overflow:visible}
+  body.baski-acik .sbaski-kutu{box-shadow:none;padding:0;max-width:none}
+  .sbaski-arac{display:none}
+}

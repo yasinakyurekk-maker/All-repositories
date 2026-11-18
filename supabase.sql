@@ -94,6 +94,11 @@ create table if not exists siparisler (
   created_at timestamptz not null default now()
 );
 create index if not exists siparisler_created on siparisler(created_at desc);
+-- sipariş formu alanları
+alter table siparisler add column if not exists yetkili text;
+alter table siparisler add column if not exists telefon text;
+alter table siparisler add column if not exists adres text;
+alter table siparisler add column if not exists odeme text;
 
 alter table urunler    enable row level security;
 alter table siparisler enable row level security;

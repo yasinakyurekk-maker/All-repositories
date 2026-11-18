@@ -194,32 +194,67 @@
 
   <!-- ÜRÜN SİPARİŞLERİ -->
   <div class="main gut" id="v-siparis" hidden>
-    <div class="in cols">
-      <div class="stack">
-        <section class="panel" aria-labelledby="s-h">
-          <h2 id="s-h">Ürün siparişleri</h2>
-          <div class="tools">
-            <div class="field" id="sk-wrap" style="flex:1 1 200px"><label for="s-kurum">Kurum</label><select id="s-kurum"></select></div>
-            <div class="field" style="flex:0 1 190px"><label for="s-durum">Durum</label><select id="s-durum">
-              <option value="">Tümü</option><option value="bekliyor">Onay bekliyor</option><option value="onaylandi">Onaylandı</option>
-              <option value="hazirlaniyor">Hazırlanıyor</option><option value="teslim">Teslim edildi</option><option value="iptal">İptal</option></select></div>
+    <div class="in stack">
+      <div class="tabs gorunum sgec" role="tablist" aria-label="Sipariş ekranı"><button type="button" id="sg-form" role="tab" aria-selected="true">Sipariş formu</button><button type="button" id="sg-liste" role="tab" aria-selected="false"><span id="sg-liste-ad">Siparişlerim</span> <span class="badge" id="sg-n"></span></button></div>
+
+      <!-- SİPARİŞ FORMU -->
+      <section class="panel sform" id="sp-form" aria-labelledby="sf-h">
+        <div class="sform-head">
+          <div><div class="label">Bizden Yayıncılık</div><h2 id="sf-h">Ürün Sipariş Formu</h2></div>
+          <div class="sform-tarih" id="sf-bugun"></div>
+        </div>
+
+        <div class="sbolum">
+          <h3><span>1</span> Sipariş veren</h3>
+          <div class="sgrid">
+            <div class="field" id="sf-kurum-wrap" hidden><label for="sf-kurum">Kurum</label><select id="sf-kurum"></select></div>
+            <div class="field" id="sf-kurumad-wrap"><span class="flabel">Kurum</span><div class="sabit" id="sf-kurumad"></div></div>
+            <div class="field"><label for="sf-yetkili">Yetkili kişi</label><input id="sf-yetkili" autocomplete="name" placeholder="Ad Soyad"></div>
+            <div class="field"><label for="sf-tel">Telefon</label><input id="sf-tel" type="tel" autocomplete="tel" placeholder="05xx xxx xx xx"></div>
           </div>
-          <div class="slist" id="s-list"></div>
-        </section>
-      </div>
-      <aside>
-        <section class="panel" aria-labelledby="sf-h">
-          <h2 id="sf-h">Yeni ürün siparişi</h2>
-          <div class="field" id="sf-kurum-wrap" hidden><label for="sf-kurum">Kurum</label><select id="sf-kurum"></select></div>
+          <div class="field"><label for="sf-adres">Teslim adresi</label><textarea id="sf-adres" rows="2" placeholder="Mahalle, cadde, no, ilçe / il"></textarea></div>
+        </div>
+
+        <div class="sbolum">
+          <h3><span>2</span> Ürünler</h3>
           <div class="field"><label for="sf-ara">Ürün ara</label><input id="sf-ara" type="search" placeholder="Ürün adı ya da kategori…"></div>
-          <div class="urunsec" id="urunsec"></div>
+          <div class="utablo">
+            <div class="uthead" aria-hidden="true"><span>Ürün</span><span>Birim fiyat</span><span>Adet</span><span>Tutar</span></div>
+            <div class="urunsec" id="urunsec"></div>
+          </div>
           <div class="sepet" id="sepet"></div>
-          <div class="field"><label for="sf-tarih">İstenen teslim tarihi</label><input id="sf-tarih" type="date"></div>
-          <div class="field"><label for="sf-not">Not</label><input id="sf-not" placeholder="Teslim adresi, yetkili, saat…"></div>
-          <button class="primary" type="button" id="sf-gonder">Siparişi gönder</button>
-          <div class="msg" id="sf-msg" role="status"></div>
-        </section>
-      </aside>
+        </div>
+
+        <div class="sbolum">
+          <h3><span>3</span> Teslim ve ödeme</h3>
+          <div class="sgrid">
+            <div class="field"><label for="sf-tarih">İstenen teslim tarihi</label><input id="sf-tarih" type="date"></div>
+            <div class="field"><label for="sf-odeme">Ödeme şekli</label><select id="sf-odeme"><option value="">Seçin</option><option>Havale / EFT</option><option>Cari hesap</option><option>Kapıda ödeme</option><option>Kredi kartı</option></select></div>
+          </div>
+          <div class="field"><label for="sf-not">Not</label><textarea id="sf-not" rows="2" placeholder="Teslim saati, fatura bilgisi vb. (isteğe bağlı)"></textarea></div>
+        </div>
+
+        <div class="sgonder">
+          <div class="stoplam" id="sf-toplam"></div>
+          <button class="primary" type="button" id="sf-gonder" disabled>Ürün seçin</button>
+        </div>
+        <div class="msg" id="sf-msg" role="status"></div>
+      </section>
+
+      <!-- GÖNDERİLDİ -->
+      <section class="panel sok" id="sp-ok" hidden aria-live="polite"></section>
+
+      <!-- SİPARİŞ LİSTESİ -->
+      <section class="panel" id="sp-liste" hidden aria-labelledby="s-h">
+        <h2 id="s-h">Ürün siparişleri</h2>
+        <div class="tools">
+          <div class="field" id="sk-wrap" style="flex:1 1 200px"><label for="s-kurum">Kurum</label><select id="s-kurum"></select></div>
+          <div class="field" style="flex:0 1 190px"><label for="s-durum">Durum</label><select id="s-durum">
+            <option value="">Tümü</option><option value="bekliyor">Onay bekliyor</option><option value="onaylandi">Onaylandı</option>
+            <option value="hazirlaniyor">Hazırlanıyor</option><option value="teslim">Teslim edildi</option><option value="iptal">İptal</option></select></div>
+        </div>
+        <div class="slist" id="s-list"></div>
+      </section>
     </div>
   </div>
 
@@ -268,6 +303,15 @@
     <p class="hint">config.js dosyasına Supabase adresi ve anahtarı girilmemiş. README'deki 2. adıma bakın.</p>
   </section>
 </div>
+
+<!-- yazdırılabilir sipariş formu -->
+<div class="sbaski" id="sbaski" hidden role="dialog" aria-modal="true" aria-label="Sipariş formu">
+  <div class="sbaski-kutu">
+    <div class="sbaski-arac"><button type="button" class="primary" id="sb-yazdir">Yazdır / PDF</button><button type="button" id="sb-kapat">Kapat</button></div>
+    <div id="sbaski-ic"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

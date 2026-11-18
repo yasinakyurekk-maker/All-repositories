@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     if (!paket || !paket.aktif) return json({ hata: "Paket bulunamadı." }, 400);
     siparisNo = yeniNo("PP"); tutar = Number(paket.fiyat); email = user!.email!; donus = "one_cikar";
     sepet = [[`${paket.ad} - ${ilan.ad}`, tutar.toFixed(2), 1]];
-    kaydet = () => sb.from("odemeler").insert({ siparis_no: siparisNo, ilan_id: ilan.id, sahip_id: user!.id, paket_kod: paket.kod, gun: paket.gun, tutar });
+    kaydet = () => sb.from("odemeler").insert({ siparis_no: siparisNo, ilan_id: ilan.id, sahip_id: user!.id, paket_kod: paket.kod, gun: paket.gun, tutar, ad, telefon, email, adres });
 
   } else if (tip === "siparis") {
     const il = temiz(g.il, 40), ilce = temiz(g.ilce, 60);

@@ -23,6 +23,24 @@ language sql stable as $$ select coalesce(auth.jwt()->>'role','') = 'service_rol
 alter table yoneticiler enable row level security;
 drop policy if exists y_oku on yoneticiler;
 create policy y_oku on yoneticiler for select to authenticated using (is_admin());
+drop policy if exists y_yaz on yoneticiler;
+create policy y_yaz on yoneticiler for all to authenticated using (is_admin()) with check (is_admin());
+
+-- ---------- ENGELLİ ÜYELER ----------
+-- Yönetici bir üyeyi engelleyince o üye ilan veremez, başvuru ve şikayet gönderemez.
+create table if not exists engelliler (
+  uid uuid primary key references auth.users(id) on delete cascade,
+  neden text,
+  created_at timestamptz not null default now()
+);
+alter table engelliler enable row level security;
+drop policy if exists e_yonet on engelliler;
+create policy e_yonet on engelliler for all to authenticated using (is_admin()) with check (is_admin());
+
+create or replace function engelli() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists(select 1 from engelliler where uid = auth.uid())
+$$;
 
 -- ---------- İLANLAR ----------
 create table if not exists ilanlar (
@@ -93,10 +111,10 @@ drop policy if exists i_oku on ilanlar;
 create policy i_oku on ilanlar for select to anon, authenticated
   using (durum = 'yayinda' or sahip_id = auth.uid() or is_admin());
 drop policy if exists i_ekle on ilanlar;
-create policy i_ekle on ilanlar for insert to authenticated with check (auth.uid() is not null);
+create policy i_ekle on ilanlar for insert to authenticated with check (auth.uid() is not null and not engelli());
 drop policy if exists i_guncelle on ilanlar;
 create policy i_guncelle on ilanlar for update to authenticated
-  using (sahip_id = auth.uid() or is_admin()) with check (sahip_id = auth.uid() or is_admin());
+  using (sahip_id = auth.uid() or is_admin()) with check ((sahip_id = auth.uid() and not engelli()) or is_admin());
 drop policy if exists i_sil on ilanlar;
 create policy i_sil on ilanlar for delete to authenticated using (is_admin());
 
@@ -136,12 +154,14 @@ create policy b_oku on basvurular for select to authenticated
   using (gonderen_id = auth.uid() or ilan_sahibi(ilan_id) = auth.uid() or is_admin());
 drop policy if exists b_ekle on basvurular;
 create policy b_ekle on basvurular for insert to authenticated
-  with check (gonderen_id = auth.uid() and durum = 'yeni'
+  with check (gonderen_id = auth.uid() and durum = 'yeni' and not engelli()
     and exists(select 1 from ilanlar where id = ilan_id and durum = 'yayinda' and sahip_id <> auth.uid()));
 drop policy if exists b_guncelle on basvurular;
 create policy b_guncelle on basvurular for update to authenticated
   using (ilan_sahibi(ilan_id) = auth.uid() or is_admin())
   with check (ilan_sahibi(ilan_id) = auth.uid() or is_admin());
+drop policy if exists b_sil on basvurular;
+create policy b_sil on basvurular for delete to authenticated using (is_admin());
 
 -- ---------- ŞİKAYETLER ----------
 create table if not exists sikayetler (
@@ -155,7 +175,7 @@ create table if not exists sikayetler (
 );
 alter table sikayetler enable row level security;
 drop policy if exists s_ekle on sikayetler;
-create policy s_ekle on sikayetler for insert to authenticated with check (gonderen_id = auth.uid() and not cozuldu);
+create policy s_ekle on sikayetler for insert to authenticated with check (gonderen_id = auth.uid() and not cozuldu and not engelli());
 drop policy if exists s_yonet on sikayetler;
 create policy s_yonet on sikayetler for all to authenticated using (is_admin()) with check (is_admin());
 
@@ -199,7 +219,21 @@ alter table odemeler enable row level security;
 drop policy if exists o_oku on odemeler;
 create policy o_oku on odemeler for select to authenticated using (sahip_id = auth.uid() or is_admin());
 
--- Ödeme onaylanınca ilanı öne çıkarır (süre üst üste eklenir). Tekrar gelen bildirimi yok sayar.
+-- Ödeyenin bilgileri ve yönetici onayı. Ödeme alınınca ilan KENDİLİĞİNDEN öne çıkmaz:
+-- yönetici ödemeyi görür, süreyi belirler ve onaylar.
+alter table odemeler add column if not exists ad text;
+alter table odemeler add column if not exists telefon text;
+alter table odemeler add column if not exists email text;
+alter table odemeler add column if not exists adres text;
+-- Bu sütun ilk eklendiğinde eski (zaten uygulanmış) ödemeler "onaylandi" sayılır; yeniler "bekliyor" başlar.
+alter table odemeler add column if not exists onay text not null default 'onaylandi'
+  check (onay in ('bekliyor','onaylandi','reddedildi'));
+alter table odemeler alter column onay set default 'bekliyor';
+alter table odemeler add column if not exists onaylanan_gun integer;
+alter table odemeler add column if not exists onay_notu text;
+alter table odemeler add column if not exists onay_at timestamptz;
+
+-- PayTR bildirimi: yalnızca ödemenin alındığını kaydeder. Tekrar gelen bildirimi yok sayar.
 create or replace function odeme_onayla(p_siparis text, p_basarili boolean, p_hata text default null)
 returns void language plpgsql security definer set search_path = public as $$
 declare o odemeler;
@@ -207,16 +241,81 @@ begin
   select * into o from odemeler where siparis_no = p_siparis for update;
   if not found or o.durum <> 'bekliyor' then return; end if;
   if p_basarili then
-    update odemeler set durum = 'odendi', odendi_at = now() where id = o.id;
-    update ilanlar
-      set one_cikan_bitis = greatest(coalesce(one_cikan_bitis, now()), now()) + make_interval(days => o.gun)
-      where id = o.ilan_id;
+    update odemeler set durum = 'odendi', odendi_at = now(), onay = 'bekliyor' where id = o.id;
   else
     update odemeler set durum = 'basarisiz', hata = p_hata where id = o.id;
   end if;
 end $$;
 revoke all on function odeme_onayla(text, boolean, text) from public, anon, authenticated;
 grant execute on function odeme_onayla(text, boolean, text) to service_role;
+
+-- Yönetici ödemeyi onaylar: ilanı belirlediği gün kadar öne çıkarır (varsa kalan sürenin üstüne).
+-- İlan henüz onaylanmamışsa istenirse aynı anda yayına da alır.
+create or replace function reklam_onayla(p_odeme uuid, p_gun integer, p_yayinla boolean default true)
+returns void language plpgsql security definer set search_path = public as $$
+declare o odemeler;
+begin
+  if not is_admin() then raise exception 'Bu işlem için yetkiniz yok'; end if;
+  if p_gun is null or p_gun < 1 or p_gun > 365 then raise exception 'Süre 1 ile 365 gün arasında olmalı'; end if;
+  select * into o from odemeler where id = p_odeme for update;
+  if not found or o.durum <> 'odendi' or o.onay <> 'bekliyor' then raise exception 'Bu ödeme onay beklemiyor'; end if;
+  update odemeler set onay = 'onaylandi', onaylanan_gun = p_gun, onay_at = now(), onay_notu = null where id = o.id;
+  update ilanlar
+    set one_cikan_bitis = greatest(coalesce(one_cikan_bitis, now()), now()) + make_interval(days => p_gun),
+        durum = case when p_yayinla and durum = 'bekliyor' then 'yayinda' else durum end,
+        red_notu = case when p_yayinla and durum = 'bekliyor' then null else red_notu end
+    where id = o.ilan_id;
+end $$;
+
+-- Yönetici ödemeyi reddeder (ücret PayTR panelinden iade edilir).
+create or replace function reklam_reddet(p_odeme uuid, p_not text default null)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'Bu işlem için yetkiniz yok'; end if;
+  update odemeler set onay = 'reddedildi', onay_notu = nullif(trim(p_not), ''), onay_at = now()
+    where id = p_odeme and durum = 'odendi' and onay = 'bekliyor';
+  if not found then raise exception 'Bu ödeme onay beklemiyor'; end if;
+end $$;
+revoke all on function reklam_onayla(uuid, integer, boolean) from public, anon;
+revoke all on function reklam_reddet(uuid, text) from public, anon;
+grant execute on function reklam_onayla(uuid, integer, boolean), reklam_reddet(uuid, text) to authenticated;
+
+-- ---------- ÜYELER (yalnızca yönetici) ----------
+create or replace function uye_listesi()
+returns table(id uuid, email text, created_at timestamptz, son_giris timestamptz,
+              engelli boolean, engel_nedeni text, yonetici boolean, ilan_sayisi bigint)
+language plpgsql stable security definer set search_path = public, auth as $$
+#variable_conflict use_column
+begin
+  if not is_admin() then raise exception 'Bu işlem için yetkiniz yok'; end if;
+  return query
+    select u.id, u.email::text, u.created_at, u.last_sign_in_at,
+           e.uid is not null, e.neden,
+           exists(select 1 from yoneticiler y where y.email = lower(u.email)),
+           (select count(*) from ilanlar i where i.sahip_id = u.id)
+    from auth.users u left join engelliler e on e.uid = u.id
+    order by u.created_at desc;
+end $$;
+revoke all on function uye_listesi() from public, anon;
+grant execute on function uye_listesi() to authenticated;
+
+-- Üyeyi engeller ya da engelini kaldırır; istenirse yayındaki/bekleyen ilanlarını da kaldırır.
+create or replace function uye_engelle(p_uid uuid, p_engelle boolean, p_neden text default null, p_ilanlari_kaldir boolean default false)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'Bu işlem için yetkiniz yok'; end if;
+  if p_engelle then
+    insert into engelliler(uid, neden) values (p_uid, nullif(trim(p_neden), ''))
+      on conflict (uid) do update set neden = excluded.neden;
+    if p_ilanlari_kaldir then
+      update ilanlar set durum = 'kaldirildi' where sahip_id = p_uid and durum in ('bekliyor','yayinda');
+    end if;
+  else
+    delete from engelliler where uid = p_uid;
+  end if;
+end $$;
+revoke all on function uye_engelle(uuid, boolean, text, boolean) from public, anon;
+grant execute on function uye_engelle(uuid, boolean, text, boolean) to authenticated;
 
 -- ---------- FOTOĞRAFLAR (Storage) ----------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -326,6 +425,12 @@ create table if not exists bagislar (
 alter table bagislar enable row level security;
 drop policy if exists bg_oku on bagislar;
 create policy bg_oku on bagislar for select to authenticated using (kullanici_id = auth.uid() or is_admin());
+drop policy if exists bg_guncelle on bagislar;
+create policy bg_guncelle on bagislar for update to authenticated using (is_admin()) with check (is_admin());
+-- Bağışçının adı ve mesajı, yönetici onaylayınca "son bağışlar" listesinde görünür.
+-- İlk eklendiğinde eski bağışlar görünür kalır; yeniler onay bekler.
+alter table bagislar add column if not exists listede boolean not null default true;
+alter table bagislar alter column listede set default false;
 
 -- Herkese açık özetler: toplanan tutarlar ve son bağışçılar (e-posta gösterilmez).
 drop view if exists bagis_ozet;
@@ -337,7 +442,7 @@ create view son_bagislar as
   select id, kampanya_id,
          case when gizli or coalesce(trim(ad), '') = '' then 'İsimsiz bağışçı' else ad end as ad,
          tutar, mesaj, odendi_at
-  from bagislar where durum = 'odendi' order by odendi_at desc limit 30;
+  from bagislar where durum = 'odendi' and listede order by odendi_at desc limit 30;
 grant select on bagis_ozet, son_bagislar to anon, authenticated;
 
 -- ---------- ÖDEME BİLDİRİMİ: öne çıkarma (PP), bağış (BG), mağaza siparişi (SP) ----------

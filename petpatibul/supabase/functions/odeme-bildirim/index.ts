@@ -1,5 +1,5 @@
 // petpatibul.com — PayTR ödeme bildirimi (Bildirim URL'si, 2. adım).
-// PayTR bu adrese POST atar. Hash doğrulanır; ödeme başarılıysa ilan öne çıkarılır,
+// PayTR bu adrese POST atar. Hash doğrulanır; öne çıkarma ödemesi yönetici onayına düşer,
 // bağış "ödendi" olur ya da mağaza siparişi onaylanıp stok düşülür.
 // JWT doğrulaması KAPALI yayınlanmalı:  supabase functions deploy odeme-bildirim --no-verify-jwt
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";

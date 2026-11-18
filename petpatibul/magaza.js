@@ -526,7 +526,7 @@ async function yBagislar() {
   meta("Yönetim · Bağışlar");
   const [kmp, bg, ozet, a] = await Promise.all([
     sb.from("bagis_kampanyalari").select("*").order("sira").order("created_at", { ascending: false }),
-    sb.from("bagislar").select("*, bagis_kampanyalari(baslik)").eq("durum", "odendi").order("created_at", { ascending: false }).limit(50),
+    sb.from("bagislar").select("*, bagis_kampanyalari(baslik)").eq("durum", "odendi").order("created_at", { ascending: false }).limit(100),
     sb.from("bagis_ozet").select("*"),
     ayarlar(),
   ]);
@@ -553,19 +553,32 @@ async function yBagislar() {
         <div class="satir-dugmeler"><a class="btn btn-kucuk" href="/yonetim/kampanya/${k.id}">Düzenle</a></div>
       </div>`).join("") : `<p class="bilgi">Henüz kampanya yok. Kampanya olmadan da genel bağış alınabilir.</p>`}
     </section>
-    <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Son bağışlar</h2>
-      ${(bg.data || []).length ? bg.data.map(b => `<div class="satir"><div class="satir-govde">
+    ${(() => {
+      const satir = b => `<div class="satir"><div class="satir-govde">
         <b>${esc(b.ad || "")}${b.gizli ? " (adı gizli)" : ""} · ${tl(b.tutar)}</b>
         <span class="bilgi">${esc(b.bagis_kampanyalari ? b.bagis_kampanyalari.baslik : "Genel bağış")} · ${tarih(b.created_at)} · ${esc(b.email)}</span>
         ${b.mesaj ? `<span class="bilgi">"${esc(b.mesaj)}"</span>` : ""}
-      </div></div>`).join("") : `<p class="bilgi">Henüz bağış yok.</p>`}
-    </section>
+      </div><div class="satir-dugmeler">${b.listede
+        ? `<span class="durum d-yayinda">Listede</span><button class="btn btn-kucuk" data-listede="${b.id}" data-deger="0">Listeden kaldır</button>`
+        : `<button class="btn btn-kucuk btn-ana" data-listede="${b.id}" data-deger="1">Listede göster</button>`}</div></div>`;
+      const bek = (bg.data || []).filter(b => !b.listede), gos = (bg.data || []).filter(b => b.listede);
+      return `<section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:4px">Listede gösterilmeyi bekleyenler (${bek.length})</h2>
+        <p class="bilgi" style="margin-bottom:8px">Bağış tutarı toplama hemen eklenir. Bağışçının adı ve mesajı ise sen onaylayınca bağış sayfasındaki "Son bağışlar" listesinde görünür.</p>
+        ${bek.length ? bek.map(satir).join("") : `<p class="bilgi">Bekleyen yok.</p>`}</section>
+      <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Son bağışlar</h2>
+        ${gos.length ? gos.map(satir).join("") : `<p class="bilgi">Henüz bağış yok.</p>`}</section>`;
+    })()}
     <form class="kutu form" id="bagis-ayar">
       <h2 style="font-size:22px">Ayarlar</h2>
       <label class="alan">En az bağış tutarı (TL)<input name="en_az_bagis" type="number" min="1" step="1" value="${a.en_az_bagis}" required style="max-width:200px"></label>
       <button class="btn" type="submit" style="align-self:flex-start">Kaydet</button>
     </form>
   </div>`);
+  $$("[data-listede]").forEach(b => b.onclick = async () => {
+    const { error: h } = await sb.from("bagislar").update({ listede: b.dataset.deger === "1" }).eq("id", b.dataset.listede);
+    if (h) return bildir(hataMetni(h));
+    bildir(b.dataset.deger === "1" ? "Bağış listede gösteriliyor." : "Bağış listeden kaldırıldı."); yBagislar();
+  });
   $("#bagis-ayar").onsubmit = async e => {
     e.preventDefault();
     const { error: h } = await sb.from("ayarlar").upsert({ anahtar: "en_az_bagis", deger: Number(new FormData(e.target).get("en_az_bagis")) });

@@ -10,6 +10,13 @@ const KAT = { sahiplendirme: "Sahiplendirme", kayip: "Kayıp", bulunan: "Bulunan
 const ILAN_DURUM = { bekliyor: "Onay bekliyor", yayinda: "Yayında", reddedildi: "Reddedildi", sahiplendi: "Sahiplendi", kaldirildi: "Kaldırıldı" };
 const BASVURU_DURUM = { yeni: "Yeni", kabul: "Kabul edildi", red: "Reddedildi" };
 const ODEME_DURUM = { bekliyor: "Bekliyor", odendi: "Ödendi", basarisiz: "Başarısız" };
+// Öne çıkarma ödemesinin üyeye görünen durumu: ödeme alındıktan sonra yönetici onayı beklenir.
+function reklamDurumu(o) {
+  if (o.durum !== "odendi") return [o.durum, ODEME_DURUM[o.durum]];
+  if (o.onay === "onaylandi") return ["yayinda", `Onaylandı${o.onaylanan_gun ? ` · ${o.onaylanan_gun} gün` : ""}`];
+  if (o.onay === "reddedildi") return ["reddedildi", "Reddedildi · ücret iade edilecek"];
+  return ["bekliyor", "Ödendi · onay bekleniyor"];
+}
 const OZELLIK = { asili: "Aşıları tam", kisir: "Kısırlaştırılmış", cocuk_uyumlu: "Çocuklarla uyumlu", hayvan_uyumlu: "Diğer hayvanlarla uyumlu", ozel_bakim: "Özel bakım gerektiriyor" };
 const ILLER = ["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin","Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman","Kars","Kastamonu","Kayseri","Kilis","Kırıkkale","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Şanlıurfa","Siirt","Sinop","Şırnak","Sivas","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"];
 const SAYFA_BOYU = 24;
@@ -50,7 +57,8 @@ function hataMetni(e) {
   if (/Email not confirmed/i.test(m)) return "E-postanıza gelen onay bağlantısına tıklayın, sonra giriş yapın.";
   if (/Password should be/i.test(m)) return "Şifre en az 6 karakter olmalı.";
   if (/basvurular_tekil|duplicate key/i.test(m)) return "Bu ilana zaten başvurdunuz.";
-  if (/row-level security|permission/i.test(m)) return "Bu işlem için yetkiniz yok.";
+  if (/row-level security|permission|yetkiniz yok/i.test(m)) return "Bu işlem için yetkiniz yok. Hesabın kısıtlandıysa bizimle iletişime geç.";
+  if (/arasında olmalı|onay beklemiyor/i.test(m)) return m.replace(/^.*?: /, "") + ".";
   if (/Failed to fetch|NetworkError/i.test(m)) return "Bağlantı kurulamadı. İnternetinizi kontrol edip tekrar deneyin.";
   return "Bir sorun oldu: " + m;
 }
@@ -133,7 +141,6 @@ const ROTALAR = [
   [/^\/hesabim$/, hesabimSayfasi],
   [/^\/one-cikar\/([0-9a-f-]{36})$/, oneCikarSayfasi],
   [/^\/odeme\/(basarili|hata)$/, odemeSonucSayfasi],
-  [/^\/yonetim$/, yonetimSayfasi],
   [/^\/(hakkimizda|sss|kvkk|kullanim-kosullari)$/, metinSayfasi],
 ];
 let yonlendirmeNo = 0;
@@ -695,7 +702,7 @@ async function ilanFormu(id) {
     $("#kaydet").disabled = false;
     if (sonuc.error) return mesaj(m, hataMetni(sonuc.error), true);
     bildir(id ? "Değişiklikler kaydedildi." : "İlanın onaya gönderildi. Onaylanınca yayına girecek.");
-    git("/hesabim");
+    git(id && S.yonetici && i.sahip_id !== S.kullanici.id ? "/yonetim/ilanlar?durum=tumu" : "/hesabim");
   };
 }
 
@@ -762,7 +769,7 @@ async function hesabimSayfasi() {
     </section>
     <div id="hesabim-ek"></div>
     ${(od.data || []).length ? `<section class="kutu"><h2 style="font-size:22px;margin-bottom:8px">Öne çıkarma ödemelerim</h2>
-      ${od.data.map(o => `<div class="satir"><div class="satir-govde"><b>${esc(o.paketler ? o.paketler.ad : o.paket_kod)}</b><span class="bilgi">${esc(o.ilanlar ? o.ilanlar.ad : "")} · ${tarih(o.created_at)} · ${tl(o.tutar)}</span></div><span class="durum d-${o.durum}">${esc(ODEME_DURUM[o.durum])}</span></div>`).join("")}
+      ${od.data.map(o => { const [k, a] = reklamDurumu(o); return `<div class="satir"><div class="satir-govde"><b>${esc(o.paketler ? o.paketler.ad : o.paket_kod)}</b><span class="bilgi">${esc(o.ilanlar ? o.ilanlar.ad : "")} · ${tarih(o.created_at)} · ${tl(o.tutar)}</span>${o.onay_notu ? `<span class="bilgi">Not: ${esc(o.onay_notu)}</span>` : ""}</div><span class="durum d-${k}">${esc(a)}</span></div>`; }).join("")}
     </section>` : ""}
   </div>`);
 
@@ -795,8 +802,8 @@ async function oneCikarSayfasi(id) {
   sayfa(`<div class="kap dar">
     <h1 style="font-size:clamp(30px,4vw,38px);font-weight:900;margin-bottom:8px">"${esc(i.ad)}" ilanını öne çıkar</h1>
     <p class="bilgi" style="margin-bottom:24px">Öne çıkan ilanlar ana sayfadaki vitrinde ve tüm listelerde en üstte gösterilir.
-      ${oneCikan(i) ? `Mevcut süren ${tarih(i.one_cikan_bitis)} tarihinde bitiyor; yeni paket bu sürenin üstüne eklenir.` : ""}
-      ${i.durum === "bekliyor" ? "İlanın onaylandığında öne çıkmış olarak yayına girer." : ""}</p>
+      Ödemeden sonra ekibimiz ilanını kontrol eder ve onaylar; süre onay anından başlar. Uygun bulunmazsa ücretin iade edilir.
+      ${oneCikan(i) ? `Mevcut süren ${tarih(i.one_cikan_bitis)} tarihinde bitiyor; yeni paket bu sürenin üstüne eklenir.` : ""}</p>
     <div id="odeme-alani">
     ${!A.ODEME_AKTIF ? `<div class="kutu bos-durum"><h2>Online ödeme çok yakında</h2><p>Öne çıkarma paketleri kısa süre içinde satın alınabilecek.</p></div>` : `
     <form class="kutu form" id="odeme-form">
@@ -846,83 +853,16 @@ async function odemeSonucSayfasi(sonuc) {
   const tip = new URLSearchParams(location.search).get("tip") || "one_cikar";
   if (sonuc === "basarili" && tip === "siparis" && window.sepetiBosalt) sepetiBosalt();
   const T = {
-    one_cikar: ["Teşekkürler, ödemen alındı", "İlanın birkaç dakika içinde öne çıkmış olarak görünecek.", "/hesabim", "Hesabıma git"],
+    one_cikar: ["Teşekkürler, ödemen alındı", "Ekibimiz ilanını kontrol edip onayladığında ilanın öne çıkacak. Durumunu Hesabım sayfasında görebilirsin.", "/hesabim", "Hesabıma git"],
     siparis: ["Teşekkürler, siparişin alındı", "Siparişin hazırlanınca kargo takip numarasını Hesabım sayfasında görebilirsin.", "/hesabim", "Siparişlerime git"],
-    bagis: ["Bağışın için çok teşekkürler", "Bağışın sokaktaki dostlarımızın mamasına ve tedavisine gidecek.", "/bagis", "Bağış sayfasına dön"],
+    bagis: ["Bağışın için çok teşekkürler", "Bağışın sokaktaki dostlarımızın mamasına ve tedavisine gidecek. Adın ve mesajın onaylandıktan sonra son bağışlar listesinde görünür.", "/bagis", "Bağış sayfasına dön"],
   }[tip] || ["Teşekkürler, ödemen alındı", "", "/", "Ana sayfaya git"];
   sayfa(sonuc === "basarili"
     ? `<div class="kap bos-durum"><h1>${T[0]}</h1><p>${T[1]}</p><p><a class="btn btn-ana" href="${T[2]}">${T[3]}</a></p></div>`
     : `<div class="kap bos-durum"><h1>Ödeme tamamlanamadı</h1><p>Kartından para çekilmedi. Tekrar deneyebilirsin.</p><p><a class="btn" href="${tip === "siparis" ? "/sepet" : tip === "bagis" ? "/bagis" : "/hesabim"}">Geri dön</a></p></div>`);
 }
 
-// ---------- yönetim ----------
-function yonetimSekmeleri(aktif) {
-  return `<nav class="hap-grup" aria-label="Yönetim bölümleri" style="margin-bottom:24px">${[
-    ["/yonetim", "İlanlar ve şikayetler"], ["/yonetim/urunler", "Ürünler"], ["/yonetim/siparisler", "Siparişler"], ["/yonetim/bagislar", "Bağışlar"],
-  ].map(([h, a]) => `<a class="hap" href="${h}"${h === aktif ? ' aria-current="page"' : ""}>${a}</a>`).join("")}</nav>`;
-}
-async function yonetimSayfasi() {
-  if (girisGerekli()) return;
-  if (!S.yonetici) { sayfa(`<div class="kap bos-durum"><h1>Bu sayfa yalnızca yöneticiler içindir</h1></div>`); return; }
-  meta("Yönetim");
-  const [bek, sik, pak, od] = await Promise.all([
-    sb.from("ilanlar").select("*").eq("durum", "bekliyor").order("created_at", { ascending: true }),
-    sb.from("sikayetler").select("*, ilanlar(id, ad, durum)").eq("cozuldu", false).order("created_at", { ascending: true }),
-    sb.from("paketler").select("*").order("sira"),
-    sb.from("odemeler").select("*, ilanlar(ad)").order("created_at", { ascending: false }).limit(20),
-  ]);
-  if (bek.error) throw bek.error;
-  sayfa(`<div class="kap dar">
-    <h1 style="font-size:36px;font-weight:900;margin-bottom:16px">Yönetim</h1>
-    ${yonetimSekmeleri("/yonetim")}
-    <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Onay bekleyen ilanlar (${bek.data.length})</h2>
-      ${bek.data.length ? bek.data.map(x => `<div class="satir">
-        <div class="satir-foto">${x.fotolar && x.fotolar[0] ? `<img src="${esc(x.fotolar[0])}" alt="">` : ""}</div>
-        <div class="satir-govde"><b><a href="/ilan/${x.id}" target="_blank">${esc(x.ad)}</a></b>
-          <span class="bilgi">${esc(KAT[x.kategori])} · ${esc(TUR[x.tur])} · ${esc(x.il)} · ${x.fotolar.length} fotoğraf · ${tarih(x.created_at)}</span>
-          <span class="bilgi" style="white-space:pre-line">${esc((x.aciklama || "").slice(0, 300))}</span></div>
-        <div class="satir-dugmeler"><button class="btn btn-kucuk btn-ana" data-onay="${x.id}">Yayınla</button><button class="btn btn-kucuk" data-red="${x.id}">Reddet</button></div>
-      </div>`).join("") : `<p class="bilgi">Bekleyen ilan yok.</p>`}
-    </section>
-    <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Şikayetler (${(sik.data || []).length})</h2>
-      ${(sik.data || []).length ? sik.data.map(s => `<div class="satir"><div class="satir-govde">
-          <b>${s.ilanlar ? `<a href="/ilan/${s.ilanlar.id}" target="_blank">${esc(s.ilanlar.ad)}</a> <span class="durum d-${s.ilanlar.durum}">${esc(ILAN_DURUM[s.ilanlar.durum])}</span>` : "Silinmiş ilan"}</b>
-          <span>${esc(s.neden)}</span>${s.aciklama ? `<span class="bilgi">${esc(s.aciklama)}</span>` : ""}<span class="bilgi">${tarih(s.created_at)}</span></div>
-        <div class="satir-dugmeler">${s.ilanlar && s.ilanlar.durum === "yayinda" ? `<button class="btn btn-kucuk" data-kaldir="${s.ilanlar.id}" data-sikayet="${s.id}">İlanı kaldır</button>` : ""}<button class="btn btn-kucuk" data-coz="${s.id}">Çözüldü</button></div>
-      </div>`).join("") : `<p class="bilgi">Açık şikayet yok.</p>`}
-    </section>
-    <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Öne çıkarma paketleri</h2>
-      ${(pak.data || []).map(p => `<form class="satir" data-paket="${esc(p.kod)}">
-        <div class="satir-govde"><b>${esc(p.ad)}</b><span class="bilgi">${p.gun} gün</span></div>
-        <label class="alan" style="flex-direction:row;align-items:center;gap:8px">Fiyat (TL)<input name="fiyat" type="number" min="1" step="0.01" value="${esc(p.fiyat)}" style="width:120px"></label>
-        <label class="onay"><input type="checkbox" name="aktif"${p.aktif ? " checked" : ""}> Satışta</label>
-        <button class="btn btn-kucuk" type="submit">Kaydet</button>
-      </form>`).join("")}
-    </section>
-    <section class="kutu"><h2 style="font-size:22px;margin-bottom:8px">Son ödemeler</h2>
-      ${(od.data || []).length ? od.data.map(o => `<div class="satir"><div class="satir-govde"><b>${esc(o.ilanlar ? o.ilanlar.ad : "")}</b><span class="bilgi">${esc(o.paket_kod)} · ${tl(o.tutar)} · ${tarih(o.created_at)} · ${esc(o.siparis_no)}</span></div><span class="durum d-${o.durum}">${esc(ODEME_DURUM[o.durum])}</span></div>`).join("") : `<p class="bilgi">Henüz ödeme yok.</p>`}
-    </section>
-  </div>`);
-  const guncelle = async (tablo, deg, id, metin) => {
-    const { error } = await sb.from(tablo).update(deg).eq(tablo === "paketler" ? "kod" : "id", id);
-    if (error) { bildir(hataMetni(error)); return false; }
-    bildir(metin); return true;
-  };
-  $$("[data-onay]").forEach(b => b.onclick = async () => { if (await guncelle("ilanlar", { durum: "yayinda", red_notu: null }, b.dataset.onay, "İlan yayına alındı.")) yonetimSayfasi(); });
-  $$("[data-red]").forEach(b => b.onclick = async () => {
-    const not = prompt("Ret nedeni (ilan sahibi görecek):"); if (not === null) return;
-    if (await guncelle("ilanlar", { durum: "reddedildi", red_notu: not || null }, b.dataset.red, "İlan reddedildi.")) yonetimSayfasi();
-  });
-  $$("[data-kaldir]").forEach(b => b.onclick = async () => {
-    if (!confirm("İlan yayından kaldırılsın mı?")) return;
-    if (await guncelle("ilanlar", { durum: "kaldirildi" }, b.dataset.kaldir, "İlan kaldırıldı.") && await guncelle("sikayetler", { cozuldu: true }, b.dataset.sikayet, "İlan kaldırıldı.")) yonetimSayfasi();
-  });
-  $$("[data-coz]").forEach(b => b.onclick = async () => { if (await guncelle("sikayetler", { cozuldu: true }, b.dataset.coz, "Şikayet kapatıldı.")) yonetimSayfasi(); });
-  $$("[data-paket]").forEach(f => f.onsubmit = async e => {
-    e.preventDefault(); const fd = new FormData(f);
-    await guncelle("paketler", { fiyat: Number(fd.get("fiyat")), aktif: !!fd.get("aktif") }, f.dataset.paket, "Paket güncellendi.");
-  });
-}
+// Yönetim paneli yonetim.js içindedir.
 
 // ---------- bilgi sayfaları ----------
 function metinSayfasi(ad) {
@@ -932,7 +872,7 @@ function metinSayfasi(ad) {
     sss: ["Sıkça sorulan sorular", `<h2>Sahiplenme nasıl işler?</h2><p>Beğendiğin ilanda başvuru formunu doldurursun. Başvurun yalnızca ilan sahibine iletilir. İlan sahibi seni telefonla arar, tanışırsınız ve sahiplendirmeye birlikte karar verirsiniz.</p>
       <h2>Sahiplenmek ücretli mi?</h2><p>Hayır. Sitemizdeki tüm sahiplendirmeler ücretsizdir. Senden para isteyen bir ilan görürsen lütfen şikayet et.</p>
       <h2>İlan vermek ücretli mi?</h2><p>Hayır, ilan vermek ücretsizdir. İlanını daha çok kişiye göstermek istersen ücretli öne çıkarma paketlerinden birini seçebilirsin.</p>
-      <h2>Öne çıkarma nedir?</h2><p>Öne çıkarılan ilanlar seçilen süre boyunca ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir.</p>
+      <h2>Öne çıkarma nedir?</h2><p>Öne çıkarılan ilanlar seçilen süre boyunca ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir. Ödemeden sonra ekibimiz ilanı kontrol edip onaylar; süre onay anından başlar. Uygun bulunmayan ilanların ücreti iade edilir.</p>
       <h2>İlanım neden hemen yayına girmedi?</h2><p>Sahte ve satış ilanlarını engellemek için her ilan ekibimiz tarafından kontrol edilir. Bu genellikle kısa sürer.</p>
       <h2>Kayıp hayvanımı nasıl ilan ederim?</h2><p>"Ücretsiz ilan ver" sayfasında "Kaybettim" seçeneğini seç, fotoğraf ve kaybolduğu yeri ekle.</p>
       <h2>Mağazadan aldığım ürün ne zaman gelir?</h2><p>Siparişler genellikle 1-3 iş günü içinde kargoya verilir. Kargo takip numarasını Hesabım sayfasında görebilirsin.</p>

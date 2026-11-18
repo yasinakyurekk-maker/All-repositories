@@ -275,3 +275,23 @@ legend{font-weight:600;font-size:14px;margin-bottom:10px;padding:0}
 
 .bildirim{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--yazi);color:#fff;padding:14px 20px;border-radius:12px;box-shadow:var(--golge);z-index:20;max-width:calc(100% - 32px)}
 .gizli{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* yönetim paneli */
+.ozet-izgara{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ozet-kart{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--yazi);padding:18px}
+.ozet-kart b{font-family:Nunito,sans-serif;font-size:34px;font-weight:900;line-height:1}
+.ozet-kart span{font-size:14px;color:var(--yazi2)}
+.ozet-kart.acil{background:var(--vitrin-acik);border-color:#E9CF8A}
+.ozet-kart.acil b{color:var(--vitrin)}
+.arama-satir{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.arama-satir input{flex:1 1 220px;min-height:40px;padding:8px 12px;border:1px solid var(--cizgi2);border-radius:10px;font:inherit;background:var(--yuzey);color:var(--yazi)}
+.odeyen{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:6px 0;font-size:14px}
+.odeyen dt{color:var(--soluk)}
+.odeyen dd{margin:0;overflow-wrap:anywhere}
+.vitrin-form{display:flex;gap:6px}
+.vitrin-form input{width:72px;min-height:36px;padding:4px 8px;border:1px solid var(--cizgi2);border-radius:10px;font:inherit}
+.vitrin-form button{flex:1}
+.paket-satir{align-items:flex-end}
+.paket-satir .alan{flex:1 1 120px}
+.paket-satir .alan:first-child{flex:2 1 200px}
+.btn-sil{color:var(--hata);border-color:var(--hata-acik)}

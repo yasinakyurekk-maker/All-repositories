@@ -4,11 +4,16 @@
 
 - **Ziyaretçi**: ilanları il, tür, yaş, cinsiyet ve sağlık durumuna göre filtreler. Her il ve tür için ayrı adres vardır (`/kedi-sahiplendirme/istanbul` gibi), böylece Google'da "İstanbul kedi sahiplendirme" aramasında çıkabilir.
 - **Üye**: e-postayla üye olur, fotoğraflı ilan verir, ilanlara başvurur. Başvuranın telefonu yalnızca ilan sahibine görünür.
-- **İlan sahibi**: gelen başvuruları Hesabım sayfasında görür, kabul eder ya da reddeder, ilanı "Sahiplendi" olarak kapatır. İsterse ilanını ücretli olarak **öne çıkarır**.
+- **İlan sahibi**: gelen başvuruları Hesabım sayfasında görür, kabul eder ya da reddeder, ilanı "Sahiplendi" olarak kapatır. İsterse ilanını ücretli olarak **öne çıkarır**. Ödeme alınınca ilan hemen öne çıkmaz; yönetici ödeyeni görür, süreyi belirleyip onaylar.
 - **Öne çıkan (reklam veren) ilanlar**: ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir. Süre bitince kendiliğinden normale döner.
 - **Mağaza** (`/magaza`): mama, ekipman, oyuncak ve bakım ürünleri. Sepet bu tarayıcıda tutulur, ödeme PayTR ile alınır. Ödeme onaylanınca stok kendiliğinden düşer. Belirli tutarın üstünde kargo bedava.
 - **Bağış** (`/bagis`): sokak hayvanları için genel bağış ya da kampanyaya bağış (örn. kış maması, kısırlaştırma fonu). Toplanan tutarlar ve son bağışçılar herkese açık; bağışçı isterse adını gizleyebilir.
-- **Yönetici**: ilanları yayına alır veya reddeder, şikayetleri inceler, öne çıkarma paketlerinin fiyatlarını değiştirir, ödemeleri görür. Ayrıca ürün ekler ve stok günceller, siparişlerin durumunu ve kargo takip numarasını girer, bağış kampanyaları açar ve gelen bağışları görür.
+- **Yönetici** (`/yonetim`): sitede hiçbir şey onun onayı olmadan yayına girmez. Özet sayfasında onayını bekleyen her şey sayılarla görünür.
+  - *İlanlar*: tüm ilanları durumuna göre listeler, arar, onaylar, reddeder, kaldırır, düzenler, kalıcı siler; istediği ilanı ödemesiz olarak istediği gün kadar öne çıkarır.
+  - *Reklamlar*: öne çıkarma için ödeme yapanın adını, telefonunu, e-postasını, adresini görür; kaç gün öne çıkacağını kendisi belirleyip onaylar ya da reddeder (iade PayTR panelinden). Öne çıkan ilanların bitiş tarihini değiştirir, paket ekler, fiyat ve gün değiştirir.
+  - *Başvurular*, *Şikayetler*: tüm başvuruları ve şikayetleri görür, karar verir.
+  - *Üyeler*: üyeleri listeler, engeller (engelli üye ilan, başvuru, şikayet gönderemez; ilanları da kaldırılabilir), başka yönetici ekler ya da çıkarır.
+  - *Ürünler*, *Siparişler*, *Bağışlar*: ürün ve stok, sipariş durumu ve kargo takip numarası, bağış kampanyaları. Bağışçının adı ve mesajı yönetici onaylayınca listede görünür.
 
 Veriler Supabase'de durur, site Vercel'de yayınlanır, ödemeler PayTR ile alınır.
 
@@ -16,7 +21,7 @@ Veriler Supabase'de durur, site Vercel'de yayınlanır, ödemeler PayTR ile alı
 
 ### 1. Supabase (veritabanı)
 1. supabase.com > **New project**. Bölge olarak **Frankfurt (eu-central-1)** seçin.
-2. **SQL Editor > New query**: bu klasördeki `supabase.sql` dosyasının tamamını yapıştırın. **En alttaki** `yonetici@ornek.com` yerine kendi e-postanızı yazın, **Run**'a basın.
+2. **SQL Editor > New query**: bu klasördeki `supabase.sql` dosyasının tamamını yapıştırın. (Dosya güncellenince aynı şekilde tekrar çalıştırın; veriler silinmez.) **En alttaki** `yonetici@ornek.com` yerine kendi e-postanızı yazın, **Run**'a basın.
 3. **Authentication > URL Configuration**: *Site URL* alanına `https://petpatibul.com` yazın; *Redirect URLs* listesine `https://petpatibul.com/**` ekleyin.
 
 ### 2. Ayarlar
@@ -66,6 +71,7 @@ Hukuki durum netleşince `config.js` içinde `BAGIS_AKTIF: true` yapın. Bağı�
 |---|---|
 | `index.html`, `style.css`, `app.js` | Sitenin kendisi: sahiplendirme, ilanlar, hesap ve ilan yönetimi |
 | `magaza.js` | Mağaza, sepet, bağış sayfaları ve bunların yönetim ekranları |
+| `yonetim.js` | Yönetim paneli: özet, ilanlar, reklam onayı, başvurular, şikayetler, üyeler |
 | `config.js` | Supabase adresi ve ödeme anahtarı (açık/kapalı) |
 | `supabase.sql` | Tablolar, güvenlik kuralları, fotoğraf deposu |
 | `supabase/functions/odeme-baslat` | PayTR ödeme sayfasını açar (öne çıkarma, sipariş, bağış); tutarı veritabanından hesaplar |

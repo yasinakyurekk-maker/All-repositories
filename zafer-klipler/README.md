@@ -1,16 +1,34 @@
-# Zafer Klipleri – @haydizafereankara
+# Zafer klipleri
 
-Ümit Özdağ'ın resmi kanallarındaki konuşmalardan otomatik hazırlanan kesitler.
-Her günün klasöründe .mp4 (Reels), .txt (kaynak, alıntı, önerilen açıklama) ve alıntı kartları (.jpg) var.
-**Bu dosyalar henüz Instagram'da paylaşılmadı; paylaşmadan önce izleyip kontrol edin.**
+Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri otomatik paylaşılmaz.
+
+## 2026-11-19
+- [1000_NOT.txt](gunluk/2026-11-19/1000_NOT.txt)
+
+## 2026-11-18
+- [1200_sosyal-medya-egitim.mp4](gunluk/2026-11-18/1200_sosyal-medya-egitim.mp4)
+- [1200_sosyal-medya-egitim.txt](gunluk/2026-11-18/1200_sosyal-medya-egitim.txt)
+- [1200_sosyal-medya-egitim_onizleme.jpg](gunluk/2026-11-18/1200_sosyal-medya-egitim_onizleme.jpg)
+- [1700_sosyal-medya-zarari.mp4](gunluk/2026-11-18/1700_sosyal-medya-zarari.mp4)
+- [1700_sosyal-medya-zarari.txt](gunluk/2026-11-18/1700_sosyal-medya-zarari.txt)
+- [1700_sosyal-medya-zarari_onizleme.jpg](gunluk/2026-11-18/1700_sosyal-medya-zarari_onizleme.jpg)
+- [2230_is-arayan-genc.mp4](gunluk/2026-11-18/2230_is-arayan-genc.mp4)
+- [2230_is-arayan-genc.txt](gunluk/2026-11-18/2230_is-arayan-genc.txt)
+- [2230_is-arayan-genc_onizleme.jpg](gunluk/2026-11-18/2230_is-arayan-genc_onizleme.jpg)
+- [turkluk_turkluk-ataturk-cumhuriyet.mp4](gunluk/2026-11-18/turkluk_turkluk-ataturk-cumhuriyet.mp4)
+- [turkluk_turkluk-ataturk-cumhuriyet.txt](gunluk/2026-11-18/turkluk_turkluk-ataturk-cumhuriyet.txt)
+- [turkluk_turkluk-ataturk-cumhuriyet_muzikli.mp4](gunluk/2026-11-18/turkluk_turkluk-ataturk-cumhuriyet_muzikli.mp4)
+- [turkluk_turkluk-ataturk-cumhuriyet_onizleme.jpg](gunluk/2026-11-18/turkluk_turkluk-ataturk-cumhuriyet_onizleme.jpg)
+- [turkluk_turkluk-milletin-ozgecmisi.mp4](gunluk/2026-11-18/turkluk_turkluk-milletin-ozgecmisi.mp4)
+- [turkluk_turkluk-milletin-ozgecmisi.txt](gunluk/2026-11-18/turkluk_turkluk-milletin-ozgecmisi.txt)
+- [turkluk_turkluk-milletin-ozgecmisi_muzikli.mp4](gunluk/2026-11-18/turkluk_turkluk-milletin-ozgecmisi_muzikli.mp4)
+- [turkluk_turkluk-milletin-ozgecmisi_onizleme.jpg](gunluk/2026-11-18/turkluk_turkluk-milletin-ozgecmisi_onizleme.jpg)
 
 ## 2026-11-17
-- [1000_alinti1.jpg](gunluk/2026-11-17/1000_alinti1.jpg) · [bilgi](gunluk/2026-11-17/1000_alinti1.txt)
-- [1000_alinti2.jpg](gunluk/2026-11-17/1000_alinti2.jpg) · [bilgi](gunluk/2026-11-17/1000_alinti2.txt)
-- [1000_universite-egitimi-sistemi.mp4](gunluk/2026-11-17/1000_universite-egitimi-sistemi.mp4) · [bilgi](gunluk/2026-11-17/1000_universite-egitimi-sistemi.txt)
-
-## Hazır klipler
-- [klip1.mp4](hazir/klip1.mp4) · [klip2.mp4](hazir/klip2.mp4) · [klip3.mp4](hazir/klip3.mp4) · [kaynaklar.txt](hazir/kaynaklar.txt)
-
-## Profil görselleri
-- [profil klasörü](profil/)
+- [1000_alinti1.jpg](gunluk/2026-11-17/1000_alinti1.jpg)
+- [1000_alinti1.txt](gunluk/2026-11-17/1000_alinti1.txt)
+- [1000_alinti2.jpg](gunluk/2026-11-17/1000_alinti2.jpg)
+- [1000_alinti2.txt](gunluk/2026-11-17/1000_alinti2.txt)
+- [1000_universite-egitimi-sistemi.mp4](gunluk/2026-11-17/1000_universite-egitimi-sistemi.mp4)
+- [1000_universite-egitimi-sistemi.txt](gunluk/2026-11-17/1000_universite-egitimi-sistemi.txt)
+- [1000_universite-egitimi-sistemi_onizleme.jpg](gunluk/2026-11-17/1000_universite-egitimi-sistemi_onizleme.jpg)

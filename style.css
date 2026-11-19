@@ -370,3 +370,40 @@ textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
   .srow .sno{grid-area:no}.srow [data-sf="ad"]{grid-area:ad}.srow select{grid-area:birim}.srow [data-sf="adet"]{grid-area:adet}.srow .ssatsil{grid-area:sil}
   .satir-ekle{width:100%}
 }
+
+/* ay ay tablo */
+.tabs.gorunum.g3{grid-template-columns:auto auto auto}
+.ttablo-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;-webkit-overflow-scrolling:touch}
+.ttablo-wrap[hidden]{display:none}
+.ttablo{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.ttablo th,.ttablo td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:6px;vertical-align:top;text-align:left}
+.ttablo th:last-child,.ttablo td:last-child{border-right:0}
+.ttablo tbody tr:last-child th,.ttablo tbody tr:last-child td{border-bottom:0}
+.ttablo thead th{background:var(--field);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);position:sticky;top:0;min-width:150px}
+.ttablo .tay{position:sticky;left:0;background:var(--surface);z-index:1;width:84px}
+.ttablo thead .tay{background:var(--field);z-index:2;min-width:84px}
+.ttablo tbody .tay b{display:block;font-size:14px}
+.ttablo tbody .tay span{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.ttablo tr.buay .tay{box-shadow:inset 3px 0 0 var(--accent)}
+.ttablo tr.buay .tay b{color:var(--accent)}
+.ttablo tr.gecti td,.ttablo tr.gecti .tay{opacity:.6}
+.ttablo td{min-width:150px}
+.tcell{display:grid;gap:1px;width:100%;text-align:left;padding:6px 8px;margin-bottom:4px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;line-height:1.3}
+.tcell b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.tcell .tgun{font-family:var(--f-mono);font-size:11.5px;color:var(--accent);font-weight:700}
+.tcell .tsub{font-size:11.5px;color:var(--muted)}
+.tcell i{font-style:normal;font-family:var(--f-body,inherit);font-weight:600;margin-left:4px}
+.tcell i.t-ok{color:var(--ok)}.tcell i.t-sec{color:var(--warn)}
+.tcell.alindi{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.tcell.secili{background:var(--warn-soft);border-color:var(--warn)}
+.tcell.past{opacity:.6}
+.tcell.pasif{border-style:dashed;opacity:.6}
+.tcell[data-tikb],.tcell[data-tedit]{cursor:pointer}
+.tcell[data-tikb]:hover,.tcell[data-tedit]:hover{border-color:var(--accent)}
+.tbos{width:100%;padding:2px;border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:8px;font-size:15px;line-height:1.4;opacity:.5}
+.tbos:hover,.tbos:focus-visible{opacity:1;color:var(--accent);border-color:var(--accent)}
+@media (max-width:520px){.tabs.gorunum.g3 button{padding:6px 10px;font-size:13px}.ttablo td,.ttablo thead th{min-width:132px}}
+#v-takvim .cols.genis{grid-template-columns:minmax(0,1fr)}
+#v-takvim .cols.genis aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.ttablo-wrap .cal-legend{padding:8px 10px;position:sticky;left:0;border-top:1px solid var(--line)}
+.ttablo td,.ttablo thead th{min-width:124px}

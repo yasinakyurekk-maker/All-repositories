@@ -5,6 +5,7 @@ Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri oto
 ## 2026-11-19
 - [1000_NOT.txt](gunluk/2026-11-19/1000_NOT.txt)
 - [1200_NOT.txt](gunluk/2026-11-19/1200_NOT.txt)
+- [1700_NOT.txt](gunluk/2026-11-19/1700_NOT.txt)
 
 ## 2026-11-18
 - [1200_sosyal-medya-egitim.mp4](gunluk/2026-11-18/1200_sosyal-medya-egitim.mp4)

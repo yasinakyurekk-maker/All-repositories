@@ -50,7 +50,7 @@
       <button type="button" data-sekme="takvim" aria-current="page">Deneme takvimi</button>
       <button type="button" data-sekme="deneme">Denemeler</button>
       <button type="button" data-sekme="siparis">Ürün siparişleri <span class="badge" id="nav-sip"></span></button>
-      <button type="button" data-sekme="urun" id="nav-urun" hidden>Ürün kataloğu</button>
+      <button type="button" data-sekme="urun" id="nav-urun" hidden style="display:none">Ürün kataloğu</button>
     </nav>
   </header>
 
@@ -217,12 +217,11 @@
 
         <div class="sbolum">
           <h3><span>2</span> Ürünler</h3>
-          <div class="field"><label for="sf-ara">Ürün ara</label><input id="sf-ara" type="search" placeholder="Ürün adı ya da kategori…"></div>
-          <div class="utablo">
-            <div class="uthead" aria-hidden="true"><span>Ürün</span><span>Birim fiyat</span><span>Adet</span><span>Tutar</span></div>
-            <div class="urunsec" id="urunsec"></div>
+          <div class="stablo">
+            <div class="sthead" aria-hidden="true"><span>#</span><span>Ürün adı</span><span>Birim</span><span>Adet</span><span></span></div>
+            <div id="skalem"></div>
           </div>
-          <div class="sepet" id="sepet"></div>
+          <button type="button" class="satir-ekle" id="sf-satir">+ Satır ekle</button>
         </div>
 
         <div class="sbolum">

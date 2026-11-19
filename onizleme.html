@@ -364,6 +364,22 @@ textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
   .sbaski-arac{display:none}
 }
 
+/* serbest ürün satırları */
+.stablo{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sthead,.srow{display:grid;grid-template-columns:28px minmax(0,1fr) 110px 96px 36px;gap:8px;align-items:center}
+.sthead{padding:8px 10px;background:var(--field);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.srow{padding:6px 10px;border-top:1px solid var(--line)}
+.sno{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:center}
+.srow input,.srow select{padding:8px 10px}
+.ssatsil{width:32px;height:32px;padding:0;font-size:18px;line-height:1}
+.satir-ekle{justify-self:start;border-style:dashed;color:var(--accent);font-weight:600}
+@media (max-width:620px){
+  .sthead{display:none}
+  .srow{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 32px;grid-template-areas:"no ad ad sil" ". birim adet ."}
+  .srow .sno{grid-area:no}.srow [data-sf="ad"]{grid-area:ad}.srow select{grid-area:birim}.srow [data-sf="adet"]{grid-area:adet}.srow .ssatsil{grid-area:sil}
+  .satir-ekle{width:100%}
+}
+
 .demo{background:#fff6d6;color:#5a4300;font-size:13.5px;padding:8px 16px;text-align:center;border-bottom:1px solid #f0d77a}
 .demo b{font-family:var(--f-mono)}
 </style>
@@ -411,7 +427,7 @@ textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
       <button type="button" data-sekme="takvim" aria-current="page">Deneme takvimi</button>
       <button type="button" data-sekme="deneme">Denemeler</button>
       <button type="button" data-sekme="siparis">Ürün siparişleri <span class="badge" id="nav-sip"></span></button>
-      <button type="button" data-sekme="urun" id="nav-urun" hidden>Ürün kataloğu</button>
+      <button type="button" data-sekme="urun" id="nav-urun" hidden style="display:none">Ürün kataloğu</button>
     </nav>
   </header>
 
@@ -578,12 +594,11 @@ textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
 
         <div class="sbolum">
           <h3><span>2</span> Ürünler</h3>
-          <div class="field"><label for="sf-ara">Ürün ara</label><input id="sf-ara" type="search" placeholder="Ürün adı ya da kategori…"></div>
-          <div class="utablo">
-            <div class="uthead" aria-hidden="true"><span>Ürün</span><span>Birim fiyat</span><span>Adet</span><span>Tutar</span></div>
-            <div class="urunsec" id="urunsec"></div>
+          <div class="stablo">
+            <div class="sthead" aria-hidden="true"><span>#</span><span>Ürün adı</span><span>Birim</span><span>Adet</span><span></span></div>
+            <div id="skalem"></div>
           </div>
-          <div class="sepet" id="sepet"></div>
+          <button type="button" class="satir-ekle" id="sf-satir">+ Satır ekle</button>
         </div>
 
         <div class="sbolum">
@@ -709,9 +724,9 @@ urunler:[{id:"u1",ad:"LGS 8. Sınıf Deneme Seti (5'li)",kategori:"Deneme",birim
 {id:"u4",ad:"AYT Fizik Soru Bankası",kategori:"Soru Bankası",birim:"kitap",fiyat:290,aktif:true},
 {id:"u5",ad:"Optik Form (100'lü)",kategori:"Kırtasiye",birim:"paket",fiyat:95,aktif:true},
 {id:"u6",ad:"Eski Baskı Deneme Seti",kategori:"Deneme",birim:"set",fiyat:120,aktif:false}],
-siparisler:[{id:"a1b2c3d4-0000-0000-0000-000000000001",kurum_id:"k1",kalemler:[{urun_id:"u1",ad:"LGS 8. Sınıf Deneme Seti (5'li)",birim:"set",fiyat:250,adet:35},{urun_id:"u5",ad:"Optik Form (100'lü)",birim:"paket",fiyat:95,adet:2}],teslim_tarihi:g(9),notlar:"Okul müdürlüğüne teslim",yetkili:"Ayşe Yılmaz",telefon:"0532 000 00 00",adres:"Atatürk Mah. Okul Cad. No:12, Çankaya / Ankara",odeme:"Havale / EFT",durum:"bekliyor",created_at:new Date(Date.now()-36e5).toISOString()},
-{id:"f9e8d7c6-0000-0000-0000-000000000002",kurum_id:"k2",kalemler:[{urun_id:"u2",ad:"TYT Deneme Seti (3'lü)",birim:"set",fiyat:180,adet:120}],teslim_tarihi:g(3),durum:"hazirlaniyor",created_at:new Date(Date.now()-3*864e5).toISOString()},
-{id:"0c1d2e3f-0000-0000-0000-000000000003",kurum_id:"k1",kalemler:[{urun_id:"u3",ad:"8. Sınıf Matematik Soru Bankası",birim:"kitap",fiyat:320,adet:40}],durum:"teslim",created_at:new Date(Date.now()-20*864e5).toISOString()}]};
+siparisler:[{id:"a1b2c3d4-0000-0000-0000-000000000001",kurum_id:"k1",kalemler:[{ad:"LGS 8. Sınıf Deneme Seti (5'li)",birim:"set",adet:35},{ad:"Optik Form (100'lü)",birim:"paket",adet:2}],teslim_tarihi:g(9),notlar:"Okul müdürlüğüne teslim",yetkili:"Ayşe Yılmaz",telefon:"0532 000 00 00",adres:"Atatürk Mah. Okul Cad. No:12, Çankaya / Ankara",odeme:"Havale / EFT",durum:"bekliyor",created_at:new Date(Date.now()-36e5).toISOString()},
+{id:"f9e8d7c6-0000-0000-0000-000000000002",kurum_id:"k2",kalemler:[{ad:"TYT Deneme Seti (3'lü)",birim:"set",adet:120}],teslim_tarihi:g(3),durum:"hazirlaniyor",created_at:new Date(Date.now()-3*864e5).toISOString()},
+{id:"0c1d2e3f-0000-0000-0000-000000000003",kurum_id:"k1",kalemler:[{ad:"8. Sınıf Matematik Soru Bankası",birim:"kitap",adet:40}],durum:"teslim",created_at:new Date(Date.now()-20*864e5).toISOString()}]};
 let n=100,user=null,cb=null;
 const isAdmin=()=>!!user&&db.yoneticiler.some(y=>y.email===user.email);
 const myK=()=>user&&(db.kurumlar.find(k=>k.email===user.email)||{}).id||null;
@@ -827,7 +842,7 @@ function kur(){
   $("who").textContent=(admin?"Yönetici · ":"")+S.email;
   $("p-siparis").hidden=!admin;$("p-kurumlar").hidden=!admin;$("ksec-wrap").hidden=!admin;$("fk-wrap").hidden=!admin;
   $("fkurum").required=admin;
-  $("nav-urun").hidden=!admin;$("sk-wrap").hidden=!admin;$("sf-kurum-wrap").hidden=!admin;
+  $("nav-urun").hidden=true;$("sk-wrap").hidden=!admin;$("sf-kurum-wrap").hidden=!admin;
   $("form-h").textContent=admin?"Deneme ekle":"Deneme siparişi ver";
   $("kaydet").textContent=admin?"Kaydet":"Siparişi gönder";
   $("altbaslik").textContent=admin?"Kurumların deneme siparişleri. Denemeye 1 hafta kala uyarı çıkar.":"Deneme siparişlerinizi buradan verin ve takip edin.";
@@ -853,7 +868,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.rol)yuk
 
 // ---------- çizim ----------
 const kAd=id=>(S.kurumlar.find(k=>k.id===id)||{}).ad||"—";
-function render(){renderDeneme();renderSiparis();if(S.rol==="admin")renderUrunler();renderYayin();renderSekme()}
+function render(){renderDeneme();renderSiparis();renderYayin();renderSekme()}
 function renderDeneme(){
   const admin=S.rol==="admin";const t=parts(todayStr());
   const all=[...S.denemeler].sort((a,b)=>a.tarih.localeCompare(b.tarih));
@@ -1118,38 +1133,37 @@ function renderSiparis(){
         <div class="meta">${tarihSaat(x.created_at)}${x.teslim_tarihi?" · İstenen teslim: "+tarihYaz(x.teslim_tarihi):""}</div>
         ${bilgi?`<div class="meta">${bilgi}</div>`:""}${x.adres?`<div class="meta">Adres: ${esc(x.adres)}</div>`:""}</div>
         <span class="pill ${x.durum==="bekliyor"?"bekliyor":x.durum==="iptal"?"iptal":x.durum==="teslim"?"teslim":x.durum==="hazirlaniyor"?"hazirlaniyor":"onaylandi"}">${SDURUM[x.durum]}</span></div>
-      <div class="skal">${x.kalemler.map(k=>`<div><span>${esc(k.ad)}</span><span>${k.adet} ${esc(k.birim||"adet")}${k.fiyat!=null?" · "+TL(k.fiyat*k.adet):""}</span></div>`).join("")}</div>
+      <div class="skal">${x.kalemler.map(k=>`<div><span>${esc(k.ad)}</span><span>${k.adet} ${esc(k.birim||"adet")}</span></div>`).join("")}</div>
       ${x.notlar?`<div class="meta" style="font-size:13px;color:var(--muted)">Not: ${esc(x.notlar)}</div>`:""}
-      <div class="sfoot"><span style="font-size:13.5px"><b>${adet}</b> ürün${t!=null?" · Toplam <b>"+TL(t)+"</b>":""}</span>
+      <div class="sfoot"><span style="font-size:13.5px"><b>${x.kalemler.length}</b> kalem · <b>${adet}</b> adet</span>
         <div class="row" style="gap:6px"><button type="button" class="ghost" data-sform="${x.id}">Formu aç</button>${admin?`<select data-sdurum="${x.id}" aria-label="Sipariş durumu">${Object.entries(SDURUM).map(([k,v])=>`<option value="${k}" ${k===x.durum?"selected":""}>${v}</option>`).join("")}</select>`:""}
         ${admin||x.durum==="bekliyor"?`<button class="ghost danger" data-ssil="${x.id}">${admin?"Sil":"Siparişi geri çek"}</button>`:""}</div></div>
       ${S.confirm==="s"+x.id?`<div class="confirm">Sipariş ${sipNo(x)} silinsin mi? <button class="danger" data-ssilok="${x.id}">Evet</button><button data-delno="1">Vazgeç</button></div>`:""}
     </div>`}).join("");
-  // ürün tablosu
-  const ara=$("sf-ara").value.trim().toLocaleLowerCase("tr");
-  const urs=S.urunler.filter(u=>u.aktif&&(!ara||(u.ad+" "+(u.kategori||"")).toLocaleLowerCase("tr").includes(ara)));
-  const kats=[...new Set(urs.map(u=>u.kategori||"Diğer"))].sort((a,b)=>a.localeCompare(b,"tr"));
-  $("urunsec").innerHTML=!S.urunler.some(u=>u.aktif)?`<div class="empty">${admin?"Önce Ürün kataloğu sekmesinden ürün ekleyin.":"Henüz satışta ürün yok."}</div>`
-    :!urs.length?'<div class="empty">Aramaya uyan ürün yok.</div>'
-    :kats.map(k=>`<div class="ukat">${esc(k)}</div>`+urs.filter(u=>(u.kategori||"Diğer")===k).map(u=>{const q=S.sepet[u.id]||0;
-      return `<div class="urow ${q?"sec":""}"><div class="uad"><strong>${esc(u.ad)}</strong><span>${esc(u.birim)}${u.aciklama?" · "+esc(u.aciklama):""}</span></div>
-      <div class="ufiyat">${u.fiyat!=null?TL(u.fiyat):"—"}</div>
-      <div class="qty"><button type="button" data-q="${u.id}" data-d="-1" aria-label="Azalt">−</button><input type="number" min="0" inputmode="numeric" value="${q||""}" placeholder="0" data-qi="${u.id}" aria-label="${esc(u.ad)} adedi"><button type="button" data-q="${u.id}" data-d="1" aria-label="Artır">+</button></div>
-      <div class="ututar" data-tut="${u.id}">${q&&u.fiyat!=null?TL(u.fiyat*q):""}</div></div>`}).join("")).join("");
+  // ürün satırları (kurum kendisi yazar)
+  if(!S.satirlar||!S.satirlar.length)S.satirlar=[yeniSatir(),yeniSatir(),yeniSatir()];
+  $("skalem").innerHTML=S.satirlar.map((x,i)=>`<div class="srow">
+    <span class="sno">${i+1}</span>
+    <input data-si="${i}" data-sf="ad" value="${esc(x.ad)}" placeholder="Ürün adını yazın" aria-label="${i+1}. satır ürün adı">
+    <select data-si="${i}" data-sf="birim" aria-label="${i+1}. satır birim">${BIRIMLER.map(b=>`<option ${b===x.birim?"selected":""}>${b}</option>`).join("")}</select>
+    <input data-si="${i}" data-sf="adet" type="number" min="1" inputmode="numeric" value="${x.adet}" placeholder="0" aria-label="${i+1}. satır adet">
+    <button type="button" class="ghost danger ssatsil" data-satsil="${i}" aria-label="${i+1}. satırı sil" ${S.satirlar.length<2?"disabled":""}>×</button></div>`).join("");
   renderSepet();
 }
+const BIRIMLER=["adet","paket","set","koli","kitap"];
+function yeniSatir(){return{ad:"",birim:"adet",adet:""}}
+function doluSatirlar(){return(S.satirlar||[]).filter(x=>x.ad.trim()&&Number(x.adet)>0)}
 function renderSepet(){
-  const kal=Object.entries(S.sepet).filter(([,q])=>q>0).map(([id,q])=>({u:S.urunler.find(u=>u.id===id),q})).filter(x=>x.u);
-  for(const el of document.querySelectorAll("#urunsec [data-tut]")){const u=S.urunler.find(x=>x.id===el.dataset.tut);const q=S.sepet[el.dataset.tut]||0;el.textContent=q&&u&&u.fiyat!=null?TL(u.fiyat*q):""}
-  if(!kal.length){$("sepet").innerHTML="";$("sf-toplam").innerHTML='<span class="hint">Tablodan ürün adetlerini girin.</span>';$("sf-gonder").disabled=true;$("sf-gonder").textContent="Ürün seçin";return}
-  const t=kal.every(x=>x.u.fiyat!=null)?kal.reduce((a,x)=>a+x.u.fiyat*x.q,0):null;const adet=kal.reduce((a,x)=>a+x.q,0);
-  $("sepet").innerHTML=`<div class="label">Sipariş özeti</div>`+kal.map(x=>`<div class="sat"><span>${esc(x.u.ad)}</span><span>${x.q} ${esc(x.u.birim)}${x.u.fiyat!=null?" · "+TL(x.u.fiyat*x.q):""}</span></div>`).join("");
-  $("sf-toplam").innerHTML=`<span>${kal.length} kalem · ${adet} adet</span>${t!=null?`<b>${TL(t)}</b>`:""}`;
+  const kal=doluSatirlar();
+  if(!kal.length){$("sf-toplam").innerHTML='<span class="hint">Ürün adını ve adedini yazın.</span>';$("sf-gonder").disabled=true;$("sf-gonder").textContent="Ürün yazın";return}
+  $("sf-toplam").innerHTML=`<span><b>${kal.length}</b> kalem · <b>${kal.reduce((a,x)=>a+Number(x.adet),0)}</b> adet</span>`;
   $("sf-gonder").disabled=false;$("sf-gonder").textContent="Siparişi gönder";
 }
-$("urunsec").addEventListener("input",e=>{const id=e.target.dataset.qi;if(!id)return;const v=Math.max(0,parseInt(e.target.value)||0);S.sepet[id]=v;
-  e.target.closest(".urow").classList.toggle("sec",v>0);renderSepet()});
-$("sf-ara").addEventListener("input",()=>renderSiparis());
+$("skalem").addEventListener("input",e=>{const i=e.target.dataset.si;if(i===undefined)return;S.satirlar[i][e.target.dataset.sf]=e.target.value;renderSepet()});
+$("skalem").addEventListener("change",e=>{const i=e.target.dataset.si;if(i===undefined)return;S.satirlar[i][e.target.dataset.sf]=e.target.value;renderSepet()});
+$("skalem").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.si!==undefined){e.preventDefault();const i=Number(e.target.dataset.si);if(i===S.satirlar.length-1)satirEkle();else{const n=document.querySelector(`#skalem [data-si="${i+1}"][data-sf="ad"]`);if(n)n.focus()}}});
+function satirEkle(){S.satirlar.push(yeniSatir());renderSiparis();const n=document.querySelector(`#skalem [data-si="${S.satirlar.length-1}"][data-sf="ad"]`);if(n)n.focus()}
+$("sf-satir").onclick=satirEkle;
 $("s-kurum").onchange=$("s-durum").onchange=()=>renderSiparis();
 $("sf-kurum").addEventListener("change",()=>sipDoldur());
 $("sg-form").onclick=()=>sipGorunum("form");$("sg-liste").onclick=()=>sipGorunum("liste");
@@ -1158,8 +1172,9 @@ $("v-siparis").addEventListener("change",async e=>{const id=e.target.dataset.sdu
 $("sf-gonder").onclick=async()=>{
   const admin=S.rol==="admin";const kurum_id=admin?$("sf-kurum").value:S.kurumId;
   if(!kurum_id){flash($("sf-msg"),"Kurum seçin.",true);$("sf-kurum").focus();return}
-  const kalemler=Object.entries(S.sepet).filter(([,q])=>q>0).map(([id,q])=>{const u=S.urunler.find(u=>u.id===id);return u&&{urun_id:u.id,ad:u.ad,birim:u.birim,fiyat:u.fiyat??null,adet:q}}).filter(Boolean);
-  if(!kalemler.length){flash($("sf-msg"),"En az bir ürünün adedini girin.",true);return}
+  const yarim=(S.satirlar||[]).find(x=>x.ad.trim()&&!(Number(x.adet)>0));if(yarim){flash($("sf-msg"),`"${yarim.ad.trim()}" için adet yazın.`,true);return}
+  const kalemler=doluSatirlar().map(x=>({ad:x.ad.trim(),birim:x.birim,adet:Number(x.adet)}));
+  if(!kalemler.length){flash($("sf-msg"),"En az bir ürün adı ve adedi yazın.",true);return}
   const yetkili=$("sf-yetkili").value.trim(),telefon=$("sf-tel").value.trim(),adres=$("sf-adres").value.trim();
   if(!yetkili||!telefon||!adres){flash($("sf-msg"),"Yetkili kişi, telefon ve teslim adresini doldurun.",true);(!yetkili?$("sf-yetkili"):!telefon?$("sf-tel"):$("sf-adres")).focus();return}
   $("sf-gonder").disabled=true;
@@ -1167,7 +1182,7 @@ $("sf-gonder").onclick=async()=>{
   const {data,error}=await sb.from("siparisler").insert(body).select();
   if(error){flash($("sf-msg"),hataMetni(error),true);$("sf-gonder").disabled=false;return}
   const yeni=data&&data[0]||{...body,id:"",created_at:new Date().toISOString(),durum:body.durum||"bekliyor"};
-  S.sepet={};S.sfDolu=null;for(const id of ["sf-tarih","sf-not","sf-ara","sf-odeme"])$(id).value="";
+  S.satirlar=null;S.sfDolu=null;for(const id of ["sf-tarih","sf-not","sf-odeme"])$(id).value="";
   S.sonSiparis=yeni;S.sgor="ok";
   $("sp-ok").innerHTML=`<div class="okicon" aria-hidden="true">✓</div><h2>${admin?"Sipariş kaydedildi":"Siparişiniz bize ulaştı"}</h2>
     <p class="hint">${yeni.id?"Sipariş numarası <b>"+sipNo(yeni)+"</b>. ":""}${admin?"":"Onaylandığında durumunu Siparişlerim sekmesinde göreceksiniz."}</p>
@@ -1183,9 +1198,9 @@ function sipFormu(x){
     <tr><th>Yetkili</th><td>${esc(x.yetkili||"")}</td><th>Telefon</th><td>${esc(x.telefon||"")}</td></tr>
     <tr><th>Teslim adresi</th><td colspan="3">${esc(x.adres||"")}</td></tr>
     <tr><th>İstenen teslim</th><td>${x.teslim_tarihi?tarihYaz(x.teslim_tarihi):"—"}</td><th>Ödeme</th><td>${esc(x.odeme||"—")}</td></tr></table>
-  <table class="btab bkal"><thead><tr><th>#</th><th>Ürün</th><th>Birim</th><th class="r">Birim fiyat</th><th class="r">Adet</th><th class="r">Tutar</th></tr></thead><tbody>
-    ${x.kalemler.map((k,i)=>`<tr><td>${i+1}</td><td>${esc(k.ad)}</td><td>${esc(k.birim||"adet")}</td><td class="r">${k.fiyat!=null?TL(k.fiyat):"—"}</td><td class="r">${k.adet}</td><td class="r">${k.fiyat!=null?TL(k.fiyat*k.adet):"—"}</td></tr>`).join("")}</tbody>
-    <tfoot><tr><td colspan="4">Toplam</td><td class="r">${x.kalemler.reduce((a,k)=>a+k.adet,0)}</td><td class="r">${t!=null?TL(t):"—"}</td></tr></tfoot></table>
+  <table class="btab bkal"><thead><tr><th>#</th><th>Ürün</th><th>Birim</th><th class="r">Adet</th></tr></thead><tbody>
+    ${x.kalemler.map((k,i)=>`<tr><td>${i+1}</td><td>${esc(k.ad)}</td><td>${esc(k.birim||"adet")}</td><td class="r">${k.adet}</td></tr>`).join("")}</tbody>
+    <tfoot><tr><td colspan="3">Toplam</td><td class="r">${x.kalemler.reduce((a,k)=>a+k.adet,0)}</td></tr></tfoot></table>
   ${x.notlar?`<p class="bnot"><b>Not:</b> ${esc(x.notlar)}</p>`:""}
   <div class="bimza"><div>Sipariş veren<br><span>${esc(x.yetkili||"")}</span></div><div>Teslim alan</div></div></div>`}
 function formAc(x){$("sbaski-ic").innerHTML=sipFormu(x);$("sbaski").hidden=false;document.body.classList.add("baski-acik");$("sb-kapat").focus()}
@@ -1314,7 +1329,7 @@ document.addEventListener("click",async e=>{
   else if(d.tsil){S.confirm="t"+d.tsil;renderYayin()}
   else if(d.tsilok){S.confirm=null;const {error}=await sb.from("takvim").delete().eq("id",d.tsilok);if(error)flash($("t-msg"),hataMetni(error),true);yukle()}
   else if(d.sekme){S.sekme=d.sekme;S.confirm=null;render();window.scrollTo({top:0})}
-  else if(d.q){const q=Math.max(0,(S.sepet[d.q]||0)+Number(d.d));S.sepet[d.q]=q;renderSiparis()}
+  else if(d.satsil!==undefined){S.satirlar.splice(Number(d.satsil),1);renderSiparis()}
   else if(d.sform){const x=S.siparisler.find(y=>y.id===d.sform);if(x)formAc(x)}
   else if(d.sformyeni){if(S.sonSiparis)formAc(S.siparisler.find(y=>y.id===S.sonSiparis.id)||S.sonSiparis)}
   else if(d.sgor)sipGorunum(d.sgor);

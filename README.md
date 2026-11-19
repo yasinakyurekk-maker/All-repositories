@@ -6,7 +6,7 @@ Kurumların deneme siparişi verdiği, yöneticinin tüm kurumların denemelerin
 
 - **Yönetici**: kurumları tanımlar (ad + giriş e-postası), gelen siparişleri onaylar veya iptal eder, tüm takvimi görür. Denemeye 1 hafta kala uyarı çıkar.
 - **Kurum**: kendi e-postasıyla girer, yalnızca kendi denemelerini görür, sipariş verir. Onaylanana kadar düzenleyip silebilir.
-- **Ürün sipariş formu**: yönetici ürün kataloğunu tanımlar (ad, kategori, birim, fiyat). Kurum sipariş formunu doldurur (yetkili, telefon, teslim adresi, ürün adetleri, teslim tarihi, ödeme şekli); sipariş anında yöneticinin "Gelen siparişler" ekranına düşer. Her sipariş yazdırılabilir form olarak açılır (Yazdır / PDF). Yönetici durumu (onaylandı, hazırlanıyor, teslim edildi, iptal) günceller.
+- **Ürün sipariş formu**: fiyat ve katalog yok. Kurum formu doldurur (yetkili, telefon, teslim adresi), ürün adlarını ve adetlerini kendisi yazar, "Satır ekle" ile istediği kadar satır ekler; teslim tarihi ve ödeme şeklini seçer. Sipariş anında yöneticinin "Gelen siparişler" ekranına düşer, yazdırılabilir form olarak açılır (Yazdır / PDF). Yönetici durumu (onaylandı, hazırlanıyor, teslim edildi, iptal) günceller.
 
 > Daha önce SQL'i çalıştırdıysanız, `supabase.sql` dosyasını yeniden çalıştırmanız yeterli; mevcut veriler silinmez.
 

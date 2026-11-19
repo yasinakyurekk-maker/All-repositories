@@ -354,3 +354,19 @@ textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
   body.baski-acik .sbaski-kutu{box-shadow:none;padding:0;max-width:none}
   .sbaski-arac{display:none}
 }
+
+/* serbest ürün satırları */
+.stablo{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sthead,.srow{display:grid;grid-template-columns:28px minmax(0,1fr) 110px 96px 36px;gap:8px;align-items:center}
+.sthead{padding:8px 10px;background:var(--field);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.srow{padding:6px 10px;border-top:1px solid var(--line)}
+.sno{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:center}
+.srow input,.srow select{padding:8px 10px}
+.ssatsil{width:32px;height:32px;padding:0;font-size:18px;line-height:1}
+.satir-ekle{justify-self:start;border-style:dashed;color:var(--accent);font-weight:600}
+@media (max-width:620px){
+  .sthead{display:none}
+  .srow{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 32px;grid-template-areas:"no ad ad sil" ". birim adet ."}
+  .srow .sno{grid-area:no}.srow [data-sf="ad"]{grid-area:ad}.srow select{grid-area:birim}.srow [data-sf="adet"]{grid-area:adet}.srow .ssatsil{grid-area:sil}
+  .satir-ekle{width:100%}
+}

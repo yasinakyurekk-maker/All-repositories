@@ -4,6 +4,7 @@ Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri oto
 
 ## 2026-11-20
 - [1000_NOT.txt](gunluk/2026-11-20/1000_NOT.txt)
+- [1200_NOT.txt](gunluk/2026-11-20/1200_NOT.txt)
 
 ## 2026-11-19
 - [1000_NOT.txt](gunluk/2026-11-19/1000_NOT.txt)

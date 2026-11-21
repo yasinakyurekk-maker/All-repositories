@@ -2,6 +2,13 @@
 
 Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri otomatik paylaşılmaz.
 
+## 2026-11-21
+- [1000_NOT.txt](gunluk/2026-11-21/1000_NOT.txt)
+- [alinti_1_nin-milli-guvenligi-ile-ilgili-baska-nel.jpg](gunluk/2026-11-21/alinti_1_nin-milli-guvenligi-ile-ilgili-baska-nel.jpg)
+- [alinti_1_nin-milli-guvenligi-ile-ilgili-baska-nel.txt](gunluk/2026-11-21/alinti_1_nin-milli-guvenligi-ile-ilgili-baska-nel.txt)
+- [alinti_2_dan-cok-konusulacak.jpg](gunluk/2026-11-21/alinti_2_dan-cok-konusulacak.jpg)
+- [alinti_2_dan-cok-konusulacak.txt](gunluk/2026-11-21/alinti_2_dan-cok-konusulacak.txt)
+
 ## 2026-11-20
 - [1000_NOT.txt](gunluk/2026-11-20/1000_NOT.txt)
 - [1200_NOT.txt](gunluk/2026-11-20/1200_NOT.txt)

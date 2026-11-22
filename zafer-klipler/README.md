@@ -5,6 +5,7 @@ Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri oto
 ## 2026-11-22
 - [1000_NOT.txt](gunluk/2026-11-22/1000_NOT.txt)
 - [1200_NOT.txt](gunluk/2026-11-22/1200_NOT.txt)
+- [1700_NOT.txt](gunluk/2026-11-22/1700_NOT.txt)
 - [alinti_1_nin-gercek-nufusu-kac-umit-ozdag.jpg](gunluk/2026-11-22/alinti_1_nin-gercek-nufusu-kac-umit-ozdag.jpg)
 - [alinti_1_nin-gercek-nufusu-kac-umit-ozdag.txt](gunluk/2026-11-22/alinti_1_nin-gercek-nufusu-kac-umit-ozdag.txt)
 

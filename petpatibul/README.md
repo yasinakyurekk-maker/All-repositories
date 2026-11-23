@@ -81,3 +81,17 @@ Hukuki durum netleşince `config.js` içinde `BAGIS_AKTIF: true` yapın. Bağı�
 ## Yayın öncesi yapılacaklar
 - `/kvkk` ve `/kullanim-kosullari` sayfalarına bir hukukçunun hazırladığı metinleri ekleyin (`app.js` içinde `metinSayfasi`). Ücretli paket sattığınız için mesafeli satış sözleşmesi de gerekir.
 - Logo ve ana sayfadaki görseller için gerçek fotoğraflar ekleyin.
+
+## Canlı kurulum (2026-11)
+- Hesaplar: Supabase ve Vercel, **petpatibul@gmail.com** ile açıldı (ikisi de ücretsiz plan).
+- Supabase projesi: `petpatibul` (proje kodu `auqjahlpxwafbzzlvtty`), bölge Avrupa.
+- Vercel projesi: `petpatibul` (takım PetPatiBul, Hobby), adres: https://petpatibul.vercel.app
+- Vercel'in yayın dalı şimdilik `claude/project-thread-d8gt9y`. Kod `main`'e birleştirilince Vercel > Settings > Environments > Production'dan `main` yapılabilir.
+- Yeni oluşturulan Supabase projelerinde "Grant API access to new tables automatically" kapalıysa, `supabase.sql`'den sonra şu izinler verilmelidir:
+  ```
+  grant usage on schema public to anon, authenticated;
+  grant select, insert, update, delete on all tables in schema public to anon, authenticated;
+  grant usage, select on all sequences in schema public to anon, authenticated;
+  alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated;
+  alter default privileges in schema public grant usage, select on sequences to anon, authenticated;
+  ```

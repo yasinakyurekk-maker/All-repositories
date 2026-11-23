@@ -98,7 +98,7 @@ Hukuki durum netleşince `config.js` içinde `BAGIS_AKTIF: true` yapın. Bağı�
 
 ### Alan adı (petpatibul.com, Natro)
 - Vercel > Domains: `petpatibul.com` (308 ile www'ye yönlenir) ve `www.petpatibul.com` (Production).
-- Natro DNS kayıtları:
-  - A, `@` → `216.198.79.1`
-  - CNAME, `www` → `0767e3e0170a62d9.vercel-dns-017.com`
+- Natro'da alan adının ad sunucuları Vercel'e çevrildi: `ns1.vercel-dns.com`, `ns2.vercel-dns.com`
+  (DNS kayıtları artık Vercel > Domains üzerinden yönetilir; Natro'nun ücretli DNS servisine gerek yok).
+  Geri almak için Natro > petpatibul.com > DNS Değiştir: `ns1.natrohost.com`, `ns2.natrohost.com`.
 - Supabase > Authentication > URL Configuration: Site URL `https://www.petpatibul.com`; Redirect URL'ler `https://www.petpatibul.com/**`, `https://petpatibul.com/**`, `https://petpatibul.vercel.app/**`.

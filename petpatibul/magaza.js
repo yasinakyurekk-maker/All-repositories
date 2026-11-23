@@ -348,13 +348,10 @@ async function bagisSayfasi(id) {
   };
 }
 
-// ---------- hesabım: siparişlerim ve bağışlarım ----------
+// ---------- hesabım: siparişlerim ----------
 async function hesabimEk(el) {
   const uid = S.kullanici.id;
-  const [sp, bg] = await Promise.all([
-    sb.from("magaza_siparisleri").select("*").eq("kullanici_id", uid).neq("durum", "bekliyor").order("created_at", { ascending: false }),
-    sb.from("bagislar").select("*, bagis_kampanyalari(baslik)").eq("kullanici_id", uid).eq("durum", "odendi").order("created_at", { ascending: false }),
-  ]);
+  const sp = await sb.from("magaza_siparisleri").select("*").eq("kullanici_id", uid).neq("durum", "bekliyor").order("created_at", { ascending: false });
   el.innerHTML = `
     <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Siparişlerim</h2>
       ${(sp.data || []).length ? sp.data.map(s => `<div class="satir"><div class="satir-govde">
@@ -363,10 +360,7 @@ async function hesabimEk(el) {
           ${s.kargo_takip ? `<span class="bilgi">Kargo: ${esc(s.kargo_firma || "")} ${esc(s.kargo_takip)}</span>` : ""}
         </div><span class="durum d-${s.durum}">${esc(SIPARIS_DURUM[s.durum])}</span></div>`).join("")
       : `<p class="bilgi">Henüz sipariş vermedin. <a href="/magaza">Mağazaya göz at</a></p>`}
-    </section>
-    ${(bg.data || []).length ? `<section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Bağışlarım</h2>
-      ${bg.data.map(b => `<div class="satir"><div class="satir-govde"><b>${tl(b.tutar)}</b><span class="bilgi">${esc(b.bagis_kampanyalari ? b.bagis_kampanyalari.baslik : "Genel bağış")} · ${tarih(b.created_at)}</span></div><span class="durum d-odendi">Teşekkürler</span></div>`).join("")}
-    </section>` : ""}`;
+    </section>`;
 }
 
 // ---------- yönetim: ürünler ----------
@@ -640,11 +634,7 @@ ROTALAR.push(
   [/^\/urun\/([0-9a-f-]{36})$/, urunSayfasi],
   [/^\/sepet$/, sepetSayfasi],
   [/^\/siparis-ver$/, siparisSayfasi],
-  [/^\/bagis$/, () => bagisSayfasi(null)],
-  [/^\/bagis\/([0-9a-f-]{36})$/, bagisSayfasi],
   [/^\/yonetim\/urunler$/, yUrunler],
   [/^\/yonetim\/urun\/(yeni|[0-9a-f-]{36})$/, yUrunFormu],
   [/^\/yonetim\/siparisler$/, ySiparisler],
-  [/^\/yonetim\/bagislar$/, yBagislar],
-  [/^\/yonetim\/kampanya\/(yeni|[0-9a-f-]{36})$/, yKampanyaFormu],
 );

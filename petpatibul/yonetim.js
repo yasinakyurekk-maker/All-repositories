@@ -5,7 +5,7 @@
 const ONAY_DURUM = { bekliyor: "Onayını bekliyor", onaylandi: "Onaylandı", reddedildi: "Reddedildi" };
 const SEKMELER = [
   ["/yonetim", "Özet"], ["/yonetim/ilanlar", "İlanlar"], ["/yonetim/reklamlar", "Reklamlar"], ["/yonetim/basvurular", "Başvurular"],
-  ["/yonetim/sikayetler", "Şikayetler"], ["/yonetim/uyeler", "Üyeler"], ["/yonetim/urunler", "Ürünler"], ["/yonetim/siparisler", "Siparişler"], ["/yonetim/bagislar", "Bağışlar"],
+  ["/yonetim/sikayetler", "Şikayetler"], ["/yonetim/uyeler", "Üyeler"], ["/yonetim/urunler", "Ürünler"], ["/yonetim/siparisler", "Siparişler"],
 ];
 function yonetimSekmeleri(aktif) {
   return `<nav class="hap-grup" aria-label="Yönetim bölümleri" style="margin-bottom:24px">${SEKMELER
@@ -54,7 +54,7 @@ async function yOzet() {
     uyeListesi(true).then(l => l.length),
   ]);
   const kart = (sayi, ad, yol, acil) => `<a class="kutu ozet-kart${acil && sayi ? " acil" : ""}" href="${yol}"><b>${sayi}</b><span>${ad}</span></a>`;
-  const bekleyen = ilan + reklam + sikayet + siparis + bagis;
+  const bekleyen = ilan + reklam + sikayet + siparis;
   sayfa(`<div class="kap dar">
     ${yUst("/yonetim")}
     <h2 style="font-size:22px;margin-bottom:4px">Senin onayını bekleyenler</h2>
@@ -64,7 +64,6 @@ async function yOzet() {
       ${kart(reklam, "Ödemesi yapılmış, onay bekleyen reklam", "/yonetim/reklamlar", true)}
       ${kart(sikayet, "Açık şikayet", "/yonetim/sikayetler", true)}
       ${kart(siparis, "Hazırlanacak sipariş", "/yonetim/siparisler", true)}
-      ${kart(bagis, "Listede gösterilmeyi bekleyen bağış", "/yonetim/bagislar", true)}
     </div>
     <h2 style="font-size:22px;margin-bottom:16px">Site geneli</h2>
     <div class="ozet-izgara">

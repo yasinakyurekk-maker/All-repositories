@@ -240,11 +240,7 @@ async function anaSayfa() {
     </div>
   </section>
 
-  <section class="kap bolum"><div class="ikili">
-    <div class="bant bant-bagis">
-      <div><span class="ust-yazi">SOKAK HAYVANLARI İÇİN BAĞIŞ</span><h2>Mama kabı boş kalmasın</h2><p>Bağışların sokaktaki dostlarımızın mamasına, aşısına ve tedavisine gider. Toplanan tutarları herkes görebilir.</p></div>
-      <div class="dugmeler"><a class="btn btn-ana" href="/bagis">Bağış yap</a></div>
-    </div>
+  <section class="kap bolum"><div>
     <div class="bant bant-magaza">
       <div><span class="ust-yazi">MAĞAZA</span><h2>Mama ve ekipman</h2><p>Yeni dostun için mama, kum, tasma, taşıma çantası ve oyuncak. Belirli tutar üstüne kargo bedava.</p></div>
       <div class="dugmeler"><a class="btn" href="/magaza">Mağazaya git</a></div>
@@ -875,8 +871,7 @@ function metinSayfasi(ad) {
       <h2>Öne çıkarma nedir?</h2><p>Öne çıkarılan ilanlar seçilen süre boyunca ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir. Ödemeden sonra ekibimiz ilanı kontrol edip onaylar; süre onay anından başlar. Uygun bulunmayan ilanların ücreti iade edilir.</p>
       <h2>İlanım neden hemen yayına girmedi?</h2><p>Sahte ve satış ilanlarını engellemek için her ilan ekibimiz tarafından kontrol edilir. Bu genellikle kısa sürer.</p>
       <h2>Kayıp hayvanımı nasıl ilan ederim?</h2><p>"Ücretsiz ilan ver" sayfasında "Kaybettim" seçeneğini seç, fotoğraf ve kaybolduğu yeri ekle.</p>
-      <h2>Mağazadan aldığım ürün ne zaman gelir?</h2><p>Siparişler genellikle 1-3 iş günü içinde kargoya verilir. Kargo takip numarasını Hesabım sayfasında görebilirsin.</p>
-      <h2>Bağışlarım nereye gidiyor?</h2><p>Bağışlar sokak hayvanlarının mama, aşı, kısırlaştırma ve tedavi masrafları için kullanılır. Toplanan tutarlar bağış sayfasında herkese açık olarak görünür.</p>`],
+      <h2>Mağazadan aldığım ürün ne zaman gelir?</h2><p>Siparişler genellikle 1-3 iş günü içinde kargoya verilir. Kargo takip numarasını Hesabım sayfasında görebilirsin.</p>`],
     kvkk: ["KVKK aydınlatma metni", `<p class="uyari">[Bu sayfaya bir hukukçu tarafından hazırlanmış KVKK aydınlatma metni eklenecek: hangi kişisel verilerin (e-posta, telefon, ad soyad, başvuru bilgileri) hangi amaçla işlendiği, kimlerle paylaşıldığı ve kullanıcının hakları.]</p>`],
     "kullanim-kosullari": ["Kullanım koşulları", `<p class="uyari">[Bu sayfaya kullanım koşulları ve öne çıkarma paketleri için mesafeli satış sözleşmesi eklenecek. Temel kurallar: hayvan satışı ve ücret talebi yasaktır, ilanlar onaydan geçer, kurallara uymayan ilanlar kaldırılır.]</p>`],
   };

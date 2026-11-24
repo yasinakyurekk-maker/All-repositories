@@ -2,6 +2,9 @@
 
 Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri otomatik paylaşılmaz.
 
+## 2026-11-24
+- [1200_NOT.txt](gunluk/2026-11-24/1200_NOT.txt)
+
 ## 2026-11-23
 - [1200_NOT.txt](gunluk/2026-11-23/1200_NOT.txt)
 - [1700_NOT.txt](gunluk/2026-11-23/1700_NOT.txt)

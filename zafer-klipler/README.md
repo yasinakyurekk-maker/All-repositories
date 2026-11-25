@@ -2,6 +2,13 @@
 
 Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri otomatik paylaşılmaz.
 
+## 2026-11-25
+- [1000_NOT.txt](gunluk/2026-11-25/1000_NOT.txt)
+- [alinti_1_biz-iki-uluslu-bir-bolunmeyi-kabul-etmiy.jpg](gunluk/2026-11-25/alinti_1_biz-iki-uluslu-bir-bolunmeyi-kabul-etmiy.jpg)
+- [alinti_1_biz-iki-uluslu-bir-bolunmeyi-kabul-etmiy.txt](gunluk/2026-11-25/alinti_1_biz-iki-uluslu-bir-bolunmeyi-kabul-etmiy.txt)
+- [alinti_2_acilima-destegini-askiya-aldigi-icin.jpg](gunluk/2026-11-25/alinti_2_acilima-destegini-askiya-aldigi-icin.jpg)
+- [alinti_2_acilima-destegini-askiya-aldigi-icin.txt](gunluk/2026-11-25/alinti_2_acilima-destegini-askiya-aldigi-icin.txt)
+
 ## 2026-11-24
 - [1200_NOT.txt](gunluk/2026-11-24/1200_NOT.txt)
 - [1700_NOT.txt](gunluk/2026-11-24/1700_NOT.txt)

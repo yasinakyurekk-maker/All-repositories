@@ -9,6 +9,7 @@
 - **Mağaza** (`/magaza`): mama, ekipman, oyuncak ve bakım ürünleri. Sepet bu tarayıcıda tutulur, ödeme PayTR ile alınır. Ödeme onaylanınca stok kendiliğinden düşer. Belirli tutarın üstünde kargo bedava.
 - **Bağış** (`/bagis`): sokak hayvanları için genel bağış ya da kampanyaya bağış (örn. kış maması, kısırlaştırma fonu). Toplanan tutarlar ve son bağışçılar herkese açık; bağışçı isterse adını gizleyebilir.
 - **Yönetici** (`/yonetim`): sitede hiçbir şey onun onayı olmadan yayına girmez. Özet sayfasında onayını bekleyen her şey sayılarla görünür.
+  - *Site içeriği* (`/yonetim/site`): ana sayfa bannerları (kayan görseller), üst alan başlığı ve görselleri, duyuru şeridi, kategori kutuları, renkli bantlar, adımlar, güven maddeleri, üst menü ve alt bilgi bağlantıları, iletişim ve sosyal medya, Hakkımızda/SSS/KVKK/Koşullar metinleri, logo, ana renk ve site başlığı. Görseller panelden yüklenir; kaydedilince hemen yayına girer. Veriler `site_icerik` tablosunda, varsayılanlar `icerik.js` içinde.
   - *İlanlar*: tüm ilanları durumuna göre listeler, arar, onaylar, reddeder, kaldırır, düzenler, kalıcı siler; istediği ilanı ödemesiz olarak istediği gün kadar öne çıkarır.
   - *Reklamlar*: öne çıkarma için ödeme yapanın adını, telefonunu, e-postasını, adresini görür; kaç gün öne çıkacağını kendisi belirleyip onaylar ya da reddeder (iade PayTR panelinden). Öne çıkan ilanların bitiş tarihini değiştirir, paket ekler, fiyat ve gün değiştirir.
   - *Başvurular*, *Şikayetler*: tüm başvuruları ve şikayetleri görür, karar verir.
@@ -71,6 +72,8 @@ Hukuki durum netleşince `config.js` içinde `BAGIS_AKTIF: true` yapın. Bağı�
 |---|---|
 | `index.html`, `style.css`, `app.js` | Sitenin kendisi: sahiplendirme, ilanlar, hesap ve ilan yönetimi |
 | `magaza.js` | Mağaza, sepet, bağış sayfaları ve bunların yönetim ekranları |
+| `icerik.js` | Panelden düzenlenen site içeriği: varsayılanlar, yükleme, menü/alt bilgi/duyuru çizimi |
+| `site-yonetim.js` | Yönetim > Site içeriği ekranı |
 | `yonetim.js` | Yönetim paneli: özet, ilanlar, reklam onayı, başvurular, şikayetler, üyeler |
 | `config.js` | Supabase adresi ve ödeme anahtarı (açık/kapalı) |
 | `supabase.sql` | Tablolar, güvenlik kuralları, fotoğraf deposu |

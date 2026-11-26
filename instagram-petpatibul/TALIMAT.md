@@ -6,6 +6,7 @@ Her gün 20:00 (İstanbul) civarında @petpatibul hesabına 1 gönderi paylaşı
 2. Sıra:
    - Kullanıcının kendi fotoğrafları KULLANILMAZ (kullanıcı isteği). `fotograflar` listesi sadece geçmiş kayıttır.
    - `pexels_sirasi` listesinde `paylasildi` boş olan İLK kayıt. `image_url` adresini kullan.
+     Kayıtta `aciklama` alanı varsa (kullanıcıya önceden onaylatılmıştır) onu AYNEN kullan; yoksa aşağıdaki gibi yaz:
      `konu` alanına göre kısa, sıcak, Türkçe bir açıklama yaz (1-2 cümle, 2-3 emoji, petpatibul.com'a / profildeki bağlantıya davet),
      ardından boş satır ve `📸 Pexels`, sonra boş satır ve hashtagler:
      `#petpatibul #evcilhayvan #patilidostlar #minnoş` + konuya uygun 3-4 tane (#kedi #yavrukedi #köpek #yavruköpek #kittens #puppies gibi).

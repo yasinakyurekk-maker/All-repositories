@@ -12,17 +12,18 @@
   ],
   "pexels_sirasi": [
     {
-      "pexels_id": 16299046,
-      "konu": "güneşte uyuyan yavru köpek",
-      "image_url": "https://images.pexels.com/photos/16299046/pexels-photo-16299046.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1080&h=1350",
-      "sayfa": "https://www.pexels.com/photo/16299046/",
-      "paylasildi": null
-    },
-    {
       "pexels_id": 6900232,
       "konu": "kırmızı yastıkta oturan kabarık gri yavru kedi",
       "image_url": "https://images.pexels.com/photos/6900232/pexels-photo-6900232.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1080&h=1350",
       "sayfa": "https://www.pexels.com/photo/6900232/",
+      "paylasildi": null,
+      "aciklama": "Bu bakışlara kim hayır diyebilir? 🥺🐾\nMinik dostumuz bugün de kalbimizi çaldı. Sen de bir patili dostun yuvası olmak ister misin? Sahiplendirme ilanları için profildeki bağlantıya göz at! 💛\n\n📸 Pexels\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #kedi #yavrukedi #kedisever #kittens"
+    },
+    {
+      "pexels_id": 16299046,
+      "konu": "güneşte uyuyan yavru köpek",
+      "image_url": "https://images.pexels.com/photos/16299046/pexels-photo-16299046.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1080&h=1350",
+      "sayfa": "https://www.pexels.com/photo/16299046/",
       "paylasildi": null
     },
     {

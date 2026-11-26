@@ -201,7 +201,8 @@ function bannerHtml() {
   if (B.aktif === false || !l.length) return "";
   const kare = (x, n) => {
     const yazi = x.baslik || x.metin || x.buton;
-    const ic = `<img src="${esc(gorselUrl(x.gorsel))}" alt="${esc(x.baslik || "")}"${n ? ' loading="lazy"' : ""}>
+    const odak = { sol: "20%", sag: "72%" }[x.odak] || "50%";
+    const ic = `<img src="${esc(gorselUrl(x.gorsel))}" alt="${esc(x.baslik || "")}" style="object-position:${odak} 50%"${n ? ' loading="lazy"' : ""}>
       ${yazi ? `<div class="slayt-yazi">${x.baslik ? `<h2>${esc(x.baslik)}</h2>` : ""}${x.metin ? `<p>${satirlar(x.metin)}</p>` : ""}${x.buton ? `<span class="btn btn-ana">${esc(x.buton)}</span>` : ""}</div>` : ""}`;
     const h = guvenliLink(x.link);
     return h ? `<a class="slayt-kare${yazi ? " yazili" : ""}" href="${esc(h)}"${disLink(h) ? ' target="_blank" rel="noopener"' : ""}>${ic}</a>` : `<div class="slayt-kare${yazi ? " yazili" : ""}">${ic}</div>`;

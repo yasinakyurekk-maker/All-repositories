@@ -20,6 +20,7 @@ const IE_BOLUMLER = [
       { k: "liste", t: "liste", a: "Bannerlar", ekle: "Banner ekle", oge: "Banner", baslikAlani: "baslik", alanlar: [
         { k: "aktif", t: "onay", a: "Yayında", vars: true },
         { k: "gorsel", t: "gorsel", a: "Görsel" },
+        { k: "odak", t: "secim", a: "Telefonda görselin hangi kısmı görünsün?", secim: { orta: "Ortası", sag: "Sağ tarafı", sol: "Sol tarafı" }, y: "Telefon ekranı dar olduğu için görselin bir kısmı kırpılır." },
         { k: "baslik", t: "yazi", a: "Başlık (isteğe bağlı)", y: "Boş bırakırsan görselin üstüne yazı yazılmaz." },
         { k: "metin", t: "uzun", a: "Kısa metin (isteğe bağlı)" },
         { k: "buton", t: "yazi", a: "Düğme yazısı (isteğe bağlı)", y: "Örn. Hemen incele" },

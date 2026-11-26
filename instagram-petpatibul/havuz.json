@@ -1,5 +1,5 @@
 {
-  "aciklama": "PetPatiBul Instagram günlük paylaşım havuzu. Sıradaki 'paylasildi' boş olan fotoğraf paylaşılır. Havuz bitince Pexels'tan ücretsiz lisanslı fotoğraf kullanılır ve fotoğrafçıya kredi verilir.",
+  "aciklama": "PetPatiBul Instagram günlük paylaşım havuzu. Kullanıcının isteğiyle yalnızca ücretsiz lisanslı (Pexels) görseller kullanılır; kullanıcının kendi fotoğrafları kullanılmaz. Sıradaki 'paylasildi' boş olan Pexels kaydı paylaşılır.",
   "saat": "20:00 Europe/Istanbul",
   "hesap": "petpatibul (Windsor.ai instagram account 17841475688039101)",
   "fotograflar": [
@@ -8,46 +8,6 @@
       "aciklama": "Havalı mı havalı! 😎🐾 Güneş gözlüğünü takan, altın zincirini kuşanan beyefendi bugün tüm sokağın yıldızı. Sen de böyle karizmatik bir dost arıyorsan profildeki bağlantıya göz at!\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #kedi #kedisever #scottishfold #catsofinstagram",
       "paylasildi": "2026-11-26",
       "media_id": "18075937511772752"
-    },
-    {
-      "dosya": "02.jpg",
-      "aciklama": "Pamuk gibi bir sabah merhabası ☁️🤍 Bu mavi gözler sana da gülümsedi mi? Patili dostlar için ilanlar ve her şey profildeki bağlantıda.\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #yavrukedi #beyazkedi #kedisever #kittens",
-      "paylasildi": null
-    },
-    {
-      "dosya": "03.jpg",
-      "aciklama": "Dört kat tatlılık bir arada! 🧸🧸🧸🧸 Hangisi senin favorin? Yorumlara yaz! 👇\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #toypoodle #köpek #yavruköpek #puppies",
-      "paylasildi": null
-    },
-    {
-      "dosya": "04.jpg",
-      "aciklama": "Avuç içi kadar mutluluk 🤎 Minik dostumuz kucak sevgisine bayılıyor. Sen de bir patiye yuva olmak ister misin?\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #toypoodle #köpeksever #yavruköpek #dogsofinstagram",
-      "paylasildi": null
-    },
-    {
-      "dosya": "05.jpg",
-      "aciklama": "Turuncu enerji yüklendi 🧡✨ Bu küçük kaşif bugün yatağın her köşesini keşfetmeye kararlı.\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #yavrukedi #turuncukedi #britishshorthair #kittens",
-      "paylasildi": null
-    },
-    {
-      "dosya": "06.jpg",
-      "aciklama": "Bu gülümseme günün en güzel haberi 😛🤍 Pamuk prensimiz omuzda gezmeyi çok seviyor!\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #pomeranian #köpek #köpeksever #dogsofinstagram",
-      "paylasildi": null
-    },
-    {
-      "dosya": "07.jpg",
-      "aciklama": "Üç kardeş, bir sürü sevgi 💞 Kim demiş kediler sarılmayı sevmez diye?\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #yavrukedi #kedisever #kardeşler #catsofinstagram",
-      "paylasildi": null
-    },
-    {
-      "dosya": "08.jpg",
-      "aciklama": "Kırmızı kazağıyla kışa hazır! ❤️❄️ Patili dostların için sıcacık aksesuarlar mağazamızda, bağlantı profilde.\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #pomeranian #köpekkıyafeti #köpeksever #puppies",
-      "paylasildi": null
-    },
-    {
-      "dosya": "09.jpg",
-      "aciklama": "Mavi gözlü ikililer 💙💙 Biri çikolata, biri karamel. Hangisi sana daha çok benziyor?\n\n#petpatibul #evcilhayvan #patilidostlar #minnoş #yavrukedi #kedisever #scottishfold #kittens",
-      "paylasildi": null
     }
   ],
   "pexels_sirasi": [
@@ -91,13 +51,6 @@
       "konu": "güneşli yatakta oturan kabarık yavru kedi",
       "image_url": "https://images.pexels.com/photos/38371070/pexels-photo-38371070.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1080&h=1350",
       "sayfa": "https://www.pexels.com/photo/38371070/",
-      "paylasildi": null
-    },
-    {
-      "pexels_id": 37936435,
-      "konu": "yeşil yaprakların arasından bakan kabarık yavru köpek",
-      "image_url": "https://images.pexels.com/photos/37936435/pexels-photo-37936435.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1080&h=1350",
-      "sayfa": "https://www.pexels.com/photo/37936435/",
       "paylasildi": null
     },
     {

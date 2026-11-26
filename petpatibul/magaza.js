@@ -132,7 +132,7 @@ async function magazaSayfasi() {
   // Mağazalar (onaylı petshoplar) ve her birinin yayındaki ürün sayısı
   const [{ data: dukkanlar }, { data: sayim }] = await Promise.all([
     sb.from("saticilar_acik").select("id, magaza_adi, logo, il, ilce").order("magaza_adi"),
-    sb.from("urunler").select("satici_id").eq("aktif", true),
+    sb.from("urunler").select("satici_id").eq("aktif", true).eq("onay", "onaylandi"),
   ]);
   const adet = id => (sayim || []).filter(u => (u.satici_id || null) === id).length;
   const magAd = mag === "site" ? "PetPatiBul" : mag ? ((dukkanlar || []).find(d => d.id === mag) || {}).magaza_adi || "" : "";
@@ -173,7 +173,7 @@ async function magazaSayfasi() {
       <a class="btn" href="/petshop-ol">Mağazada satış yap</a></section>
   </div>`);
   $("#m-sira").onchange = e => git(yol({ sira: e.target.value }));
-  let s = sb.from("urunler").select("*").eq("aktif", true);
+  let s = sb.from("urunler").select("*").eq("aktif", true).eq("onay", "onaylandi");
   if (mag === "site") s = s.is("satici_id", null);
   else if (mag) s = s.eq("satici_id", mag);
   if (kat) s = s.eq("kategori", kat);

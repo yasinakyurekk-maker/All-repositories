@@ -96,7 +96,7 @@ function saticiFormuBagla(s, kayitSonrasi) {
     if (!/^TR\d{24}$/.test(iban)) return mesaj(m, "IBAN TR ile başlamalı ve 26 karakter olmalı.", true);
     const kayit = {
       magaza_adi: fd.get("magaza_adi").trim(), yetkili: fd.get("yetkili").trim(), telefon: fd.get("telefon").trim(), email: fd.get("email").trim(),
-      il: fd.get("il"), ilce: fd.get("ilce").trim() || null, adres: fd.get("adres").trim(), aciklama: fd.get("aciklama").trim() || null, logo,
+      il: fd.get("il"), ilce: (fd.get("ilce") || "").trim() || null, adres: fd.get("adres").trim(), aciklama: fd.get("aciklama").trim() || null, logo,
       vergi_dairesi: fd.get("vergi_dairesi").trim() || null, vergi_no: fd.get("vergi_no").trim() || null, iban, hesap_sahibi: fd.get("hesap_sahibi").trim(),
       kargo_ucreti: Number(fd.get("kargo_ucreti")), ucretsiz_kargo_esigi: Number(fd.get("ucretsiz_kargo_esigi")),
     };

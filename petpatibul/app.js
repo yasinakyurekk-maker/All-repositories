@@ -67,6 +67,34 @@ function secenekler(obj, secili, bosEtiket) {
   return (bosEtiket !== undefined ? `<option value="">${esc(bosEtiket)}</option>` : "") +
     Object.entries(obj).map(([k, v]) => `<option value="${esc(k)}"${k === secili ? " selected" : ""}>${esc(v)}</option>`).join("");
 }
+// İl seçilince ilçe listesi: aynı formdaki [name=ilce] alanı ilin ilçelerinden seçilen bir listeye dönüşür.
+function ilceSecenekleri(il, secili, bosEtiket = "Seç") {
+  const liste = (window.ILCELER && ILCELER[il]) || [];
+  const ekstra = secili && !liste.includes(secili) ? [secili] : [];
+  return `<option value="">${esc(il ? bosEtiket : "Önce il seç")}</option>` +
+    [...ekstra, ...liste].map(x => `<option${x === secili ? " selected" : ""}>${esc(x)}</option>`).join("");
+}
+function ilceBagla(kok = document) {
+  if (!window.ILCELER) return;
+  $$("[name=ilce]:not([data-ilce-bagli])", kok).forEach(alan => {
+    const form = alan.form || alan.closest("form, .form");
+    const ilSec = form && $("select[name=il]", form);
+    if (!ilSec) return;
+    let sec = alan;
+    if (alan.tagName !== "SELECT") {
+      sec = document.createElement("select");
+      sec.name = "ilce"; sec.required = alan.required; if (alan.id) sec.id = alan.id; sec.className = alan.className;
+      sec.dataset.deger = alan.value || "";
+      alan.replaceWith(sec);
+    }
+    sec.dataset.ilceBagli = "1";
+    const doldur = () => { sec.innerHTML = ilceSecenekleri(ilSec.value, sec.dataset.deger || sec.value); sec.disabled = !ilSec.value; sec.dataset.deger = ""; };
+    doldur();
+    ilSec.addEventListener("change", doldur);
+  });
+}
+new MutationObserver(() => ilceBagla()).observe(document.documentElement, { childList: true, subtree: true });
+
 function ilSecenekleri(secili, bosEtiket) {
   return (bosEtiket !== undefined ? `<option value="">${esc(bosEtiket)}</option>` : "") +
     ILLER.map(i => `<option${i === secili ? " selected" : ""}>${esc(i)}</option>`).join("");
@@ -323,7 +351,7 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
   if (ilSlug && !il) { meta("Sayfa bulunamadı"); sayfa(`<div class="kap bos-durum"><h1>Böyle bir il bulamadık</h1><p><a href="${listeYolu({ kategori, tur })}">Tüm Türkiye'deki ilanlara bak</a></p></div>`); return; }
   $$("#menu-linkleri > a").forEach(a => { if ((kategori === "sahiplendirme" && a.getAttribute("href") === "/sahiplendirme") || (kategori !== "sahiplendirme" && a.getAttribute("href") === "/kayip-ilanlari")) a.setAttribute("aria-current", "page"); });
   const q = new URLSearchParams(location.search);
-  const f = { yas: q.get("yas") || "", cinsiyet: q.get("cinsiyet") || "", sira: q.get("sira") || "bekleyen", sayfa: Math.max(1, parseInt(q.get("sayfa") || "1", 10) || 1) };
+  const f = { ilce: q.get("ilce") || "", yas: q.get("yas") || "", cinsiyet: q.get("cinsiyet") || "", sira: q.get("sira") || "bekleyen", sayfa: Math.max(1, parseInt(q.get("sayfa") || "1", 10) || 1) };
   const secOz = Object.keys(OZELLIK).filter(k => q.get(k) === "1");
 
   const yer = il || "Türkiye";
@@ -339,7 +367,7 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
   meta(baslik, aciklama);
 
   const yolSorgu = (deg) => {
-    const o = { yas: f.yas, cinsiyet: f.cinsiyet, sira: f.sira === "bekleyen" ? "" : f.sira };
+    const o = { ilce: f.ilce, yas: f.yas, cinsiyet: f.cinsiyet, sira: f.sira === "bekleyen" ? "" : f.sira };
     secOz.forEach(k => { o[k] = "1"; });
     Object.assign(o, deg);
     return o;
@@ -370,6 +398,7 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
           ${Object.entries(TUR).map(([k, v]) => hap(v, kendi({ sayfa: "" }, { tur: k }), tur === k)).join("")}
         </div></fieldset>` : ""}
         <label class="alan">İl<select id="il-sec">${ilSecenekleri(il, "Tüm Türkiye")}</select></label>
+        ${il ? `<label class="alan">İlçe<select id="ilce-sec">${ilceSecenekleri(il, f.ilce, "Tüm ilçeler")}</select></label>` : ""}
         <fieldset><legend>Yaş</legend><div class="hap-grup">
           ${Object.entries(YAS).map(([k, v]) => hap(v, kendi({ yas: f.yas === k ? "" : k, sayfa: "" }), f.yas === k)).join("")}
         </div></fieldset>
@@ -385,7 +414,8 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
     </div>
   </div>`);
 
-  $("#il-sec").onchange = e => git(kendi({ sayfa: "" }, { il: e.target.value }));
+  $("#il-sec").onchange = e => git(kendi({ ilce: "", sayfa: "" }, { il: e.target.value }));
+  if ($("#ilce-sec")) $("#ilce-sec").onchange = e => git(kendi({ ilce: e.target.value, sayfa: "" }));
   $("#sira").onchange = e => git(kendi({ sira: e.target.value === "bekleyen" ? "" : e.target.value, sayfa: "" }));
   $$("[data-oz]").forEach(c => c.onchange = () => {
     const o = {}; $$("[data-oz]").forEach(x => { o[x.dataset.oz] = x.checked ? "1" : ""; });
@@ -396,6 +426,7 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
   let s = sb.from("yayindaki_ilanlar").select("*", { count: "exact" }).eq("kategori", kategori);
   if (tur) s = s.eq("tur", tur);
   if (il) s = s.eq("il", il);
+  if (il && f.ilce) s = s.eq("ilce", f.ilce);
   if (f.yas && YAS[f.yas]) s = s.eq("yas_grubu", f.yas);
   if (f.cinsiyet && CINS[f.cinsiyet]) s = s.eq("cinsiyet", f.cinsiyet);
   secOz.forEach(k => { s = s.eq(k, true); });
@@ -404,7 +435,7 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
   const { data, count, error } = await s.range(bas, bas + SAYFA_BOYU - 1);
   if (error) throw error;
 
-  $("#sayac").textContent = `${yer} · ${count || 0} ilan`;
+  $("#sayac").textContent = `${il && f.ilce ? f.ilce + ", " : ""}${yer} · ${count || 0} ilan`;
   if (!data.length) {
     $("#sonuc").innerHTML = `<div class="kutu bos-durum"><h2>Bu aramaya uygun ilan yok</h2><p>Filtreleri azaltmayı ya da başka bir ili seçmeyi dene.</p></div>`;
     return;
@@ -726,7 +757,7 @@ async function ilanFormu(id) {
     const fd = new FormData(e.target), m = $("#ilan-mesaj");
     const kayit = {
       kategori: i.kategori, tur: fd.get("tur"), ad: fd.get("ad").trim(), irk: fd.get("irk").trim() || null,
-      yas_grubu: fd.get("yas_grubu") || null, cinsiyet: fd.get("cinsiyet"), il: fd.get("il"), ilce: fd.get("ilce").trim() || null,
+      yas_grubu: fd.get("yas_grubu") || null, cinsiyet: fd.get("cinsiyet"), il: fd.get("il"), ilce: (fd.get("ilce") || "").trim() || null,
       aciklama: fd.get("aciklama").trim() || null, fotolar,
       telefon: fd.get("telefon").trim(), whatsapp: !!fd.get("whatsapp"),
     };

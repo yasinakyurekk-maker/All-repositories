@@ -244,8 +244,11 @@ async function anaSayfa() {
   meta("", C.genel.site_aciklama);
   const K = C.kahraman, KT = C.kategoriler, IL = C.ilanlar, AD = C.adimlar, G = C.guven;
   const gorseller = [K.gorsel1, K.gorsel2, K.gorsel3, K.gorsel4].map(gorselUrl);
+  const arka = gorselUrl(K.arka_gorsel);
+  const sol = { cok: [0.9, 0.7], az: [0.7, 0.2] }[K.arka_soluk] || [0.82, 0.45];
+  const arkaStil = arka ? ` style="background-image:linear-gradient(90deg,rgba(255,255,255,${sol[0]}),rgba(255,255,255,${sol[1]})),url('${esc(arka).replace(/'/g, "%27")}')"` : "";
   sayfa(`
-  <section class="kahraman"><div class="kap kahraman-in">
+  <section class="kahraman${arka ? " resimli" : ""}"${arkaStil}><div class="kap kahraman-in">
     <div class="kahraman-yazi">
       ${K.rozet ? `<span class="rozet">${esc(K.rozet)}</span>` : ""}
       ${K.baslik ? `<h1>${satirlar(K.baslik)}</h1>` : ""}

@@ -350,3 +350,5 @@ legend{font-weight:600;font-size:14px;margin-bottom:10px;padding:0}
 .ie-gorsel .ie-gorsel-dugme{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .ie-gorsel label{position:relative;overflow:hidden}
 .ie-kaydet{position:sticky;bottom:0;background:var(--yuzey);padding:12px 0;border-top:1px solid var(--cizgi);display:flex;flex-wrap:wrap;gap:8px;align-items:center;z-index:3}
+.kahraman.resimli{background-size:cover;background-position:center}
+.kahraman.resimli .kahraman-gorsel div{box-shadow:0 12px 30px rgba(15,40,35,.18)}

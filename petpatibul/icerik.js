@@ -17,6 +17,7 @@ const VARSAYILAN_ICERIK = {
     baslik: "Bir dost sahiplen,\nbir hayat değiştir.",
     aciklama: "Yuva arayan kedi, köpek ve diğer dostlarımızı bulunduğun ile göre keşfet. Tüm ilanlar yayına girmeden önce kontrol edilir.",
     arama_goster: true,
+    arka_gorsel: "", arka_soluk: "orta",
     gorsel1: "", gorsel2: "", gorsel3: "", gorsel4: "",
   },
   bannerlar: { aktif: true, sure: 6, liste: [] },

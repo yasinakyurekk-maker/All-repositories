@@ -33,6 +33,8 @@ const IE_BOLUMLER = [
       { k: "baslik", t: "uzun", a: "Büyük başlık", y: "Alt satıra geçmek için Enter'a bas.", satir: 2 },
       { k: "aciklama", t: "uzun", a: "Açıklama" },
       { k: "arama_goster", t: "onay", a: "Arama kutusunu göster" },
+      { k: "arka_gorsel", t: "gorsel", a: "Arka plan görseli (isteğe bağlı)", y: "Yazıların arkasında soluk görünür. Yatay bir görsel seç." },
+      { k: "arka_soluk", t: "secim", a: "Arka plan görseli ne kadar soluk olsun?", secim: { orta: "Orta", cok: "Çok soluk (yazı en okunaklı)", az: "Az soluk (görsel daha belirgin)" } },
       { k: "gorsel1", t: "gorsel", a: "1. görsel (sol üst)" },
       { k: "gorsel2", t: "gorsel", a: "2. görsel (sağ üst)" },
       { k: "gorsel3", t: "gorsel", a: "3. görsel (sol alt)" },

@@ -84,6 +84,7 @@ const VARSAYILAN_ICERIK = {
       { yazi: "Kuş sahiplendirme", link: "/kus-sahiplendirme" },
       { yazi: "Kayıp ilanları", link: "/kayip-ilanlari" },
       { yazi: "Mama ve ekipman", link: "/magaza" },
+      { yazi: "Petshop olarak satış yap", link: "/petshop-ol" },
       { yazi: "Hakkımızda", link: "/hakkimizda" },
       { yazi: "Sıkça sorulan sorular", link: "/sss" },
       { yazi: "KVKK", link: "/kvkk" },

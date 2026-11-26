@@ -42,7 +42,7 @@ async function yOzet() {
   meta("Yönetim");
   const say = q => q.then(r => r.count || 0);
   const t = () => ({ count: "exact", head: true });
-  const [ilan, reklam, sikayet, siparis, bagis, basvuru, yayinda, vitrin, uyeler] = await Promise.all([
+  const [ilan, reklam, sikayet, siparis, bagis, basvuru, yayinda, vitrin, uyeler, petshop, urunOnay] = await Promise.all([
     say(sb.from("ilanlar").select("id", t()).eq("durum", "bekliyor")),
     say(sb.from("odemeler").select("id", t()).eq("durum", "odendi").eq("onay", "bekliyor")),
     say(sb.from("sikayetler").select("id", t()).eq("cozuldu", false)),
@@ -52,9 +52,11 @@ async function yOzet() {
     say(sb.from("ilanlar").select("id", t()).eq("durum", "yayinda")),
     say(sb.from("ilanlar").select("id", t()).gt("one_cikan_bitis", new Date().toISOString())),
     uyeListesi(true).then(l => l.length),
+    say(sb.from("saticilar").select("id", t()).eq("durum", "bekliyor")),
+    say(sb.from("urunler").select("id", t()).eq("onay", "bekliyor")),
   ]);
   const kart = (sayi, ad, yol, acil) => `<a class="kutu ozet-kart${acil && sayi ? " acil" : ""}" href="${yol}"><b>${sayi}</b><span>${ad}</span></a>`;
-  const bekleyen = ilan + reklam + sikayet + siparis;
+  const bekleyen = ilan + reklam + sikayet + siparis + petshop + urunOnay;
   sayfa(`<div class="kap dar">
     ${yUst("/yonetim")}
     <h2 style="font-size:22px;margin-bottom:4px">Senin onayını bekleyenler</h2>
@@ -64,6 +66,8 @@ async function yOzet() {
       ${kart(reklam, "Ödemesi yapılmış, onay bekleyen reklam", "/yonetim/reklamlar", true)}
       ${kart(sikayet, "Açık şikayet", "/yonetim/sikayetler", true)}
       ${kart(siparis, "Hazırlanacak sipariş", "/yonetim/siparisler", true)}
+      ${kart(petshop, "Onay bekleyen petshop başvurusu", "/yonetim/petshoplar?durum=bekliyor", true)}
+      ${kart(urunOnay, "Onay bekleyen petshop ürünü", "/yonetim/urunler?f=bekliyor", true)}
     </div>
     <h2 style="font-size:22px;margin-bottom:16px">Site geneli</h2>
     <div class="ozet-izgara">

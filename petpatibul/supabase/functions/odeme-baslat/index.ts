@@ -78,27 +78,48 @@ Deno.serve(async (req) => {
       if (k.urun_id && n > 0 && n <= 99) adetler.set(String(k.urun_id), (adetler.get(String(k.urun_id)) ?? 0) + n);
     }
     if (!adetler.size) return json({ hata: "Sepetiniz boş." }, 400);
-    const { data: urunler } = await sb.from("urunler").select("id, ad, fiyat, stok, aktif").in("id", [...adetler.keys()]);
-    const kalemler = [];
-    let araToplam = 0;
+    const { data: urunler } = await sb.from("urunler").select("id, ad, fiyat, stok, aktif, onay, satici_id").in("id", [...adetler.keys()]);
+    const saticiIdler = [...new Set((urunler ?? []).map((u) => u.satici_id).filter(Boolean))];
+    const { data: saticilar } = saticiIdler.length
+      ? await sb.from("saticilar").select("id, durum, kargo_ucreti, ucretsiz_kargo_esigi, komisyon_orani").in("id", saticiIdler)
+      : { data: [] as { id: string; durum: string; kargo_ucreti: number; ucretsiz_kargo_esigi: number; komisyon_orani: number | null }[] };
+    const genelKargo = await ayar("kargo_ucreti", 49.9), genelEsik = await ayar("ucretsiz_kargo_esigi", 750), genelKomisyon = await ayar("komisyon_orani", 10);
+    const yuvarla = (n: number) => Math.round(n * 100) / 100;
+    // Sepet satıcılara göre bölünür; her satıcı için ayrı sipariş, hepsi tek PayTR ödemesine (odeme_no) bağlı.
+    const gruplar = new Map<string, { satici_id: string | null; kalemler: unknown[]; ara: number }>();
     for (const [id, adet] of adetler) {
       const u = (urunler ?? []).find((x) => x.id === id);
-      if (!u || !u.aktif) return json({ hata: "Sepetteki bir ürün artık satışta değil. Sepeti yenileyin." }, 409);
+      const sat = u?.satici_id ? (saticilar ?? []).find((x) => x.id === u.satici_id) : null;
+      if (!u || !u.aktif || u.onay !== "onaylandi" || (u.satici_id && (!sat || sat.durum !== "onaylandi")))
+        return json({ hata: "Sepetteki bir ürün artık satışta değil. Sepeti yenileyin." }, 409);
       if (u.stok < adet) return json({ hata: `"${u.ad}" için stokta yalnızca ${u.stok} adet var.` }, 409);
-      const fiyat = Number(u.fiyat);
-      kalemler.push({ urun_id: u.id, ad: u.ad, fiyat, adet });
+      const fiyat = Number(u.fiyat), anahtar = u.satici_id ?? "site";
+      if (!gruplar.has(anahtar)) gruplar.set(anahtar, { satici_id: u.satici_id ?? null, kalemler: [], ara: 0 });
+      const g = gruplar.get(anahtar)!;
+      g.kalemler.push({ urun_id: u.id, ad: u.ad, fiyat, adet });
+      g.ara += fiyat * adet;
       sepet.push([u.ad, fiyat.toFixed(2), adet]);
-      araToplam += fiyat * adet;
     }
-    araToplam = Math.round(araToplam * 100) / 100;
-    const kargo = araToplam >= await ayar("ucretsiz_kargo_esigi", 750) ? 0 : await ayar("kargo_ucreti", 49.9);
-    if (kargo > 0) sepet.push(["Kargo", kargo.toFixed(2), 1]);
-    tutar = Math.round((araToplam + kargo) * 100) / 100;
     siparisNo = yeniNo("SP"); email = user!.email!; donus = "siparis";
-    kaydet = () => sb.from("magaza_siparisleri").insert({
-      siparis_no: siparisNo, kullanici_id: user!.id, kalemler, ara_toplam: araToplam, kargo, toplam: tutar,
-      ad, telefon, email, adres, il, ilce: ilce || null,
-    });
+    const kayitlar = [];
+    for (const g of gruplar.values()) {
+      const sat = g.satici_id ? (saticilar ?? []).find((x) => x.id === g.satici_id)! : null;
+      const ara = yuvarla(g.ara);
+      const kargo = ara >= Number(sat ? sat.ucretsiz_kargo_esigi : genelEsik) ? 0 : Number(sat ? sat.kargo_ucreti : genelKargo);
+      if (kargo > 0) sepet.push(["Kargo", kargo.toFixed(2), 1]);
+      const oran = sat ? Number(sat.komisyon_orani ?? genelKomisyon) : 0;
+      const komisyon = sat ? yuvarla(ara * oran / 100) : 0;
+      const toplam = yuvarla(ara + kargo);
+      tutar += toplam;
+      kayitlar.push({
+        siparis_no: gruplar.size === 1 ? siparisNo : yeniNo("SP"), odeme_no: siparisNo, satici_id: g.satici_id,
+        kullanici_id: user!.id, kalemler: g.kalemler, ara_toplam: ara, kargo, toplam,
+        komisyon, satici_hakedis: sat ? yuvarla(toplam - komisyon) : 0,
+        ad, telefon, email, adres, il, ilce: ilce || null,
+      });
+    }
+    tutar = yuvarla(tutar);
+    kaydet = () => sb.from("magaza_siparisleri").insert(kayitlar);
 
   } else if (tip === "bagis") {
     tutar = Math.round(Number(g.tutar) * 100) / 100;

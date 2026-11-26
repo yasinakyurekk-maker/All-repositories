@@ -499,5 +499,198 @@ create policy si_yaz on site_icerik for all to authenticated using (is_admin()) 
 grant select on site_icerik to anon, authenticated;
 grant insert, update, delete on site_icerik to authenticated;
 
+-- ---------- PETSHOPLAR (pazaryeri satıcıları) ----------
+-- Petshoplar başvurur, yönetici onaylar. Onaylı petshop kendi ürünlerini ekler; her ürün ve her içerik
+-- değişikliği yönetici onayından geçer. Ödemeyi site kartla (PayTR) alır, sepet petshoplara göre ayrı
+-- siparişlere bölünür; her siparişte komisyon düşülür, kalan tutar (hakediş) petshopa site tarafından aktarılır.
+create table if not exists saticilar (
+  id uuid primary key default gen_random_uuid(),
+  sahip_id uuid not null unique references auth.users(id) on delete cascade,
+  magaza_adi text not null check (char_length(magaza_adi) between 2 and 80),
+  aciklama text check (char_length(aciklama) <= 2000),
+  logo text,
+  yetkili text not null check (char_length(yetkili) between 2 and 80),
+  telefon text not null check (char_length(telefon) between 10 and 20),
+  email text not null check (char_length(email) <= 120),
+  il text not null, ilce text,
+  adres text not null check (char_length(adres) <= 300),
+  vergi_dairesi text, vergi_no text,
+  iban text check (iban is null or iban ~ '^TR[0-9]{24}$'),
+  hesap_sahibi text check (char_length(hesap_sahibi) <= 80),
+  komisyon_orani numeric(5,2) check (komisyon_orani is null or komisyon_orani between 0 and 100),  -- boşsa genel oran
+  kargo_ucreti numeric(10,2) not null default 49.90 check (kargo_ucreti >= 0),
+  ucretsiz_kargo_esigi numeric(10,2) not null default 750 check (ucretsiz_kargo_esigi >= 0),
+  durum text not null default 'bekliyor' check (durum in ('bekliyor','onaylandi','reddedildi','askida')),
+  red_nedeni text,
+  created_at timestamptz not null default now()
+);
+alter table saticilar enable row level security;
+
+create or replace function satici_sahibi(p uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select p is not null and exists(select 1 from saticilar where id = p and sahip_id = auth.uid())
+$$;
+create or replace function satici_onayli(p uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists(select 1 from saticilar where id = p and durum = 'onaylandi')
+$$;
+create or replace function benim_saticim() returns uuid
+language sql stable security definer set search_path = public as $$
+  select id from saticilar where sahip_id = auth.uid() and durum = 'onaylandi'
+$$;
+
+drop policy if exists sa_oku on saticilar;
+create policy sa_oku on saticilar for select to authenticated using (sahip_id = auth.uid() or is_admin());
+drop policy if exists sa_ekle on saticilar;
+create policy sa_ekle on saticilar for insert to authenticated with check (sahip_id = auth.uid());
+drop policy if exists sa_guncelle on saticilar;
+create policy sa_guncelle on saticilar for update to authenticated using (sahip_id = auth.uid() or is_admin()) with check (sahip_id = auth.uid() or is_admin());
+drop policy if exists sa_sil on saticilar;
+create policy sa_sil on saticilar for delete to authenticated using (is_admin());
+
+-- Onay durumunu yalnızca yönetici değiştirir; reddedilen petshop bilgilerini düzeltince yeniden onaya düşer.
+create or replace function satici_koru() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if is_admin() or auth.uid() is null then return new; end if;
+  if tg_op = 'INSERT' then
+    new.durum := 'bekliyor'; new.red_nedeni := null; new.sahip_id := auth.uid(); new.komisyon_orani := null;
+  else
+    new.sahip_id := old.sahip_id; new.komisyon_orani := old.komisyon_orani;
+    if old.durum = 'reddedildi' then new.durum := 'bekliyor'; new.red_nedeni := null;
+    else new.durum := old.durum; new.red_nedeni := old.red_nedeni; end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists satici_koru on saticilar;
+create trigger satici_koru before insert or update on saticilar for each row execute function satici_koru();
+
+-- Herkese açık petshop bilgileri (yalnızca onaylılar; vergi ve e-posta bilgisi görünmez).
+create or replace view saticilar_acik as
+  select id, magaza_adi, aciklama, logo, il, ilce, telefon, kargo_ucreti, ucretsiz_kargo_esigi, created_at
+  from saticilar where durum = 'onaylandi';
+grant select on saticilar_acik to anon, authenticated;
+grant select, insert, update, delete on saticilar to authenticated;
+
+-- Ürünler: satici_id boşsa ürün sitenin kendisine aittir.
+alter table urunler add column if not exists satici_id uuid references saticilar(id) on delete cascade;
+alter table urunler add column if not exists onay text not null default 'onaylandi';
+alter table urunler add column if not exists red_nedeni text;
+alter table urunler drop constraint if exists urunler_onay_check;
+alter table urunler add constraint urunler_onay_check check (onay in ('bekliyor','onaylandi','reddedildi'));
+create index if not exists urunler_satici on urunler(satici_id);
+
+drop policy if exists ur_oku on urunler;
+create policy ur_oku on urunler for select to anon, authenticated using (
+  (aktif and onay = 'onaylandi' and (satici_id is null or satici_onayli(satici_id))) or is_admin() or satici_sahibi(satici_id));
+drop policy if exists ur_s_ekle on urunler;
+create policy ur_s_ekle on urunler for insert to authenticated with check (satici_id is not null and satici_id = benim_saticim());
+drop policy if exists ur_s_guncelle on urunler;
+create policy ur_s_guncelle on urunler for update to authenticated using (satici_sahibi(satici_id)) with check (satici_id = benim_saticim());
+drop policy if exists ur_s_sil on urunler;
+create policy ur_s_sil on urunler for delete to authenticated using (satici_sahibi(satici_id));
+
+-- Petshop ürün ekler veya ürünün içeriğini (ad, fiyat, foto…) değiştirirse ürün yeniden onaya düşer.
+-- Yalnızca stok veya satışta/değil değişirse onay korunur.
+create or replace function urun_koru() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if is_admin() or auth.uid() is null then return new; end if;
+  if tg_op = 'INSERT' then new.onay := 'bekliyor'; new.red_nedeni := null; return new; end if;
+  new.satici_id := old.satici_id;
+  if (new.ad, new.kategori, new.tur, new.marka, new.aciklama, new.fiyat, new.eski_fiyat, new.fotolar)
+     is distinct from (old.ad, old.kategori, old.tur, old.marka, old.aciklama, old.fiyat, old.eski_fiyat, old.fotolar) then
+    new.onay := 'bekliyor'; new.red_nedeni := null;
+  else
+    new.onay := old.onay; new.red_nedeni := old.red_nedeni;
+  end if;
+  return new;
+end $$;
+drop trigger if exists urun_koru on urunler;
+create trigger urun_koru before insert or update on urunler for each row execute function urun_koru();
+
+-- Petshop fotoğrafları: magaza-fotolari/satici/<kullanıcı id>/...
+drop policy if exists mf_satici_yukle on storage.objects;
+create policy mf_satici_yukle on storage.objects for insert to authenticated with check (
+  bucket_id = 'magaza-fotolari' and (storage.foldername(name))[1] = 'satici' and (storage.foldername(name))[2] = auth.uid()::text);
+drop policy if exists mf_satici_sil on storage.objects;
+create policy mf_satici_sil on storage.objects for delete to authenticated using (
+  bucket_id = 'magaza-fotolari' and (storage.foldername(name))[1] = 'satici' and (storage.foldername(name))[2] = auth.uid()::text);
+
+-- Genel komisyon oranı (%); petshop için ayrı oran yönetimden girilebilir.
+insert into ayarlar(anahtar, deger) values ('komisyon_orani', 10) on conflict (anahtar) do nothing;
+
+-- Siparişler: tek kart ödemesi (odeme_no) birden çok petshop siparişine bölünebilir.
+alter table magaza_siparisleri add column if not exists satici_id uuid references saticilar(id) on delete set null;
+alter table magaza_siparisleri add column if not exists odeme_no text;
+alter table magaza_siparisleri add column if not exists komisyon numeric(10,2) not null default 0;
+alter table magaza_siparisleri add column if not exists satici_hakedis numeric(10,2) not null default 0;
+alter table magaza_siparisleri add column if not exists hakedis_odendi_at timestamptz;
+create index if not exists magaza_siparisleri_satici on magaza_siparisleri(satici_id, created_at desc);
+create index if not exists magaza_siparisleri_odeme on magaza_siparisleri(odeme_no);
+
+drop policy if exists ms_oku on magaza_siparisleri;
+create policy ms_oku on magaza_siparisleri for select to authenticated using (kullanici_id = auth.uid() or is_admin() or satici_sahibi(satici_id));
+drop policy if exists ms_satici_guncelle on magaza_siparisleri;
+create policy ms_satici_guncelle on magaza_siparisleri for update to authenticated using (satici_sahibi(satici_id)) with check (satici_sahibi(satici_id));
+
+-- Petshop ödenmiş siparişte yalnızca durumu (hazırlanıyor, kargoda, teslim) ve kargo bilgisini değiştirebilir.
+-- İptal ve iade yöneticidedir.
+create or replace function siparis_koru() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if is_admin() or auth.uid() is null then return new; end if;
+  if old.durum not in ('odendi','hazirlaniyor','kargoda') then raise exception 'Bu sipariş artık güncellenemez.'; end if;
+  if new.durum is distinct from old.durum and new.durum not in ('hazirlaniyor','kargoda','teslim') then
+    raise exception 'Bu durum değişikliği yapılamaz.';
+  end if;
+  new := jsonb_populate_record(old, jsonb_build_object('durum', new.durum, 'kargo_firma', new.kargo_firma, 'kargo_takip', new.kargo_takip));
+  return new;
+end $$;
+drop trigger if exists siparis_koru on magaza_siparisleri;
+create trigger siparis_koru before update on magaza_siparisleri for each row execute function siparis_koru();
+
+-- Petshop alacakları: ödenmiş ve iptal edilmemiş siparişlerden, henüz aktarılmamış hakediş toplamı.
+create or replace view satici_hakedisleri as
+  select s.id as satici_id, s.magaza_adi, s.iban, s.hesap_sahibi,
+         count(m.id) filter (where m.hakedis_odendi_at is null) as siparis_adedi,
+         coalesce(sum(m.satici_hakedis) filter (where m.hakedis_odendi_at is null and m.durum = 'teslim'), 0) as odenebilir,
+         coalesce(sum(m.satici_hakedis) filter (where m.hakedis_odendi_at is null and m.durum in ('odendi','hazirlaniyor','kargoda')), 0) as yolda,
+         coalesce(sum(m.satici_hakedis) filter (where m.hakedis_odendi_at is not null), 0) as aktarilan,
+         coalesce(sum(m.komisyon) filter (where m.durum not in ('bekliyor','basarisiz','iptal')), 0) as komisyon_toplam
+  from saticilar s left join magaza_siparisleri m on m.satici_id = s.id and m.durum not in ('bekliyor','basarisiz','iptal')
+  group by s.id;
+alter view satici_hakedisleri set (security_invoker = true);
+grant select on satici_hakedisleri to authenticated;
+
+-- Ödeme bildirimi: SP ile başlayan ödeme numarası, aynı ödemeye bağlı tüm petshop siparişlerini işler.
+create or replace function odeme_isle(p_siparis text, p_basarili boolean, p_hata text default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare s magaza_siparisleri; k jsonb;
+begin
+  if p_siparis like 'PP%' then
+    perform odeme_onayla(p_siparis, p_basarili, p_hata);
+  elsif p_siparis like 'BG%' then
+    update bagislar
+      set durum = case when p_basarili then 'odendi' else 'basarisiz' end,
+          odendi_at = case when p_basarili then now() end,
+          hata = case when p_basarili then null else p_hata end
+      where siparis_no = p_siparis and durum = 'bekliyor';
+  elsif p_siparis like 'SP%' then
+    for s in select * from magaza_siparisleri where coalesce(odeme_no, siparis_no) = p_siparis and durum = 'bekliyor' for update loop
+      if not p_basarili then
+        update magaza_siparisleri set durum = 'basarisiz', hata = p_hata where id = s.id;
+        continue;
+      end if;
+      update magaza_siparisleri set durum = 'odendi', odendi_at = now() where id = s.id;
+      for k in select * from jsonb_array_elements(s.kalemler) loop
+        update urunler set stok = greatest(stok - (k->>'adet')::int, 0) where id = (k->>'urun_id')::uuid;
+      end loop;
+    end loop;
+  end if;
+end $$;
+revoke all on function odeme_isle(text, boolean, text) from public, anon, authenticated;
+grant execute on function odeme_isle(text, boolean, text) to service_role;
+
 -- >>> Kendi e-postanızı yazın <<<
 insert into yoneticiler(email) values (lower('petpatibul@gmail.com')) on conflict do nothing;

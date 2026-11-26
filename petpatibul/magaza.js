@@ -5,6 +5,16 @@
 const URUN_KAT = { mama: "Mama", ekipman: "Ekipman", oyuncak: "Oyuncak", bakim: "Bakım ve hijyen" };
 const URUN_TUR = { kedi: "Kedi", kopek: "Köpek", kus: "Kuş", diger: "Diğer", hepsi: "Tüm hayvanlar" };
 const SIPARIS_DURUM = { bekliyor: "Ödeme bekleniyor", odendi: "Ödendi", hazirlaniyor: "Hazırlanıyor", kargoda: "Kargoda", teslim: "Teslim edildi", iptal: "İptal edildi", basarisiz: "Ödeme başarısız" };
+const URUN_ONAY = { bekliyor: "Onay bekliyor", onaylandi: "Onaylandı", reddedildi: "Reddedildi" };
+// Petshop (satıcı) bilgileri: herkese açık görünümden okunur, sayfa boyunca saklanır.
+const SATICI_ONBELLEK = new Map();
+async function saticilariYukle(idler) {
+  const eksik = [...new Set(idler.filter(id => id && !SATICI_ONBELLEK.has(id)))];
+  if (!eksik.length) return;
+  const { data } = await sb.from("saticilar_acik").select("*").in("id", eksik);
+  (data || []).forEach(x => SATICI_ONBELLEK.set(x.id, x));
+}
+const saticiBul = id => (id && SATICI_ONBELLEK.get(id)) || null;
 const BAGIS_DURUM = { bekliyor: "Bekliyor", odendi: "Alındı", basarisiz: "Başarısız" };
 const BAGIS_TUTARLARI = [50, 100, 250, 500];
 ikon.canta = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
@@ -72,11 +82,25 @@ async function sepetUrunleri() {
   }
   return satirlar;
 }
+// Sepet petshoplara göre bölünür: her petshop kendi kargosunu gönderir ve kendi kargo ücretini uygular.
 async function tutarlar(satirlar) {
   const a = await ayarlar();
-  const ara = Math.round(satirlar.reduce((t, s) => t + Number(s.u.fiyat) * s.adet, 0) * 100) / 100;
-  const kargo = !ara || ara >= a.ucretsiz_kargo_esigi ? 0 : a.kargo_ucreti;
-  return { ara, kargo, toplam: Math.round((ara + kargo) * 100) / 100, esik: a.ucretsiz_kargo_esigi };
+  await saticilariYukle(satirlar.map(s => s.u.satici_id));
+  const yuvarla = n => Math.round(n * 100) / 100, gruplar = [];
+  for (const s of satirlar) {
+    const sid = s.u.satici_id || null;
+    let g = gruplar.find(x => x.sid === sid);
+    if (!g) {
+      const sat = saticiBul(sid);
+      g = { sid, ad: sat ? sat.magaza_adi : "petpatibul", ucret: sat ? Number(sat.kargo_ucreti) : a.kargo_ucreti,
+            esik: sat ? Number(sat.ucretsiz_kargo_esigi) : a.ucretsiz_kargo_esigi, ara: 0, satirlar: [] };
+      gruplar.push(g);
+    }
+    g.ara += Number(s.u.fiyat) * s.adet; g.satirlar.push(s);
+  }
+  gruplar.forEach(g => { g.ara = yuvarla(g.ara); g.kargo = !g.ara || g.ara >= g.esik ? 0 : g.ucret; });
+  const ara = yuvarla(gruplar.reduce((t, g) => t + g.ara, 0)), kargo = yuvarla(gruplar.reduce((t, g) => t + g.kargo, 0));
+  return { ara, kargo, toplam: yuvarla(ara + kargo), gruplar, esik: gruplar.length === 1 ? gruplar[0].esik : 0 };
 }
 
 // ---------- ürün kartı ----------
@@ -92,6 +116,7 @@ function urunKart(u) {
       <span class="kart-yer">${esc(u.marka || URUN_KAT[u.kategori])} · ${esc(URUN_TUR[u.tur])}</span>
       <a class="urun-ad" href="/urun/${u.id}">${esc(u.ad)}</a>
       <div class="fiyat-satir"><b>${tl(u.fiyat)}</b>${indirim ? `<s>${tl(u.eski_fiyat)}</s>` : ""}</div>
+      ${saticiBul(u.satici_id) ? `<a class="satici-ad" href="/petshop/${u.satici_id}">${esc(saticiBul(u.satici_id).magaza_adi)}</a>` : ""}
       <button type="button" class="btn btn-kucuk${yok ? "" : " btn-ana"}" ${yok ? "disabled" : `data-sepete="${u.id}"`}>${yok ? "Stokta yok" : "Sepete ekle"}</button>
     </div>
   </div>`;
@@ -125,7 +150,9 @@ async function magazaSayfasi() {
       <div class="hap-grup" aria-label="Kategori">${hap("Tümü", yol({ kategori: "" }), !kat)}${Object.entries(URUN_KAT).map(([k, v]) => hap(v, yol({ kategori: k }), kat === k)).join("")}</div>
       <div class="hap-grup" aria-label="Hayvan">${hap("Tüm hayvanlar", yol({ tur: "" }), !tur)}${["kedi", "kopek", "kus"].map(k => hap(TUR[k], yol({ tur: k }), tur === k)).join("")}</div>
     </div>
-    <div id="urunler" style="padding-bottom:64px"><p class="bilgi">Yükleniyor…</p></div>
+    <div id="urunler"><p class="bilgi">Yükleniyor…</p></div>
+    <section class="kutu petshop-davet"><div><b>Petshop musun?</b><span class="bilgi">Ürünlerini petpatibul mağazasında sat. Başvurun onaylanınca kendi panelinden ürün ekleyebilirsin.</span></div>
+      <a class="btn" href="/petshop-ol">Mağazada satış yap</a></section>
   </div>`);
   $("#m-sira").onchange = e => git(yol({ sira: e.target.value }));
   let s = sb.from("urunler").select("*").eq("aktif", true);
@@ -135,6 +162,7 @@ async function magazaSayfasi() {
   const { data, error } = await s.limit(120);
   if (error) throw error;
   const l = [...data.filter(u => u.stok > 0), ...data.filter(u => u.stok <= 0)];
+  await saticilariYukle(l.map(u => u.satici_id));
   $("#urunler").innerHTML = l.length ? `<div class="izgara urun-izgara">${l.map(urunKart).join("")}</div>`
     : `<div class="kutu bos-durum"><h2>Bu kategoride henüz ürün yok</h2><p><a href="/magaza">Tüm ürünlere bak</a></p></div>`;
 }
@@ -145,6 +173,9 @@ async function urunSayfasi(id) {
   if (!u) { meta("Ürün bulunamadı"); sayfa(`<div class="kap bos-durum"><h1>Bu ürün artık satışta değil</h1><p><a href="/magaza">Mağazaya dön</a></p></div>`); return; }
   meta(u.ad, `${u.ad}${u.marka ? " (" + u.marka + ")" : ""}: ${tl(u.fiyat)}. ${(u.aciklama || "").slice(0, 120)}`);
   const a = await ayarlar();
+  await saticilariYukle([u.satici_id]);
+  const sat = saticiBul(u.satici_id);
+  const kUcret = sat ? Number(sat.kargo_ucreti) : a.kargo_ucreti, kEsik = sat ? Number(sat.ucretsiz_kargo_esigi) : a.ucretsiz_kargo_esigi;
   const fotolar = u.fotolar || [], yok = u.stok <= 0;
   const indirim = u.eski_fiyat && Number(u.eski_fiyat) > Number(u.fiyat);
   sayfa(`<div class="kap">
@@ -165,7 +196,8 @@ async function urunSayfasi(id) {
         ${yok ? "" : `<label class="alan">Adet<input id="urun-adet" type="number" min="1" max="${Math.min(99, u.stok)}" value="1" inputmode="numeric" style="max-width:120px"></label>
           <button type="button" class="btn btn-ana" data-sepete="${u.id}" data-adetli="1">Sepete ekle</button>
           <a class="btn" href="/sepet">Sepete git</a>`}
-        <p class="bilgi">${tl(a.ucretsiz_kargo_esigi)} ve üzeri siparişlerde kargo bedava, altında ${tl(a.kargo_ucreti)}.</p>
+        <p class="bilgi">${sat ? `${esc(sat.magaza_adi)} ürünlerinde ` : ""}${tl(kEsik)} ve üzeri siparişlerde kargo bedava, altında ${tl(kUcret)}.</p>
+        ${sat ? `<div class="satici-kutu"><span class="bilgi">Satıcı</span><a href="/petshop/${sat.id}"><b>${esc(sat.magaza_adi)}</b></a><span class="bilgi">${esc(sat.ilce ? sat.ilce + " / " : "")}${esc(sat.il)}</span></div>` : ""}
       </aside>
     </div>
   </div>`);
@@ -176,13 +208,17 @@ async function urunSayfasi(id) {
 }
 
 function ozetHtml(t, satirlar) {
-  const eksik = t.esik - t.ara;
+  const eksik = t.esik - t.ara, cok = t.gruplar.length > 1;
+  const kalem = s => `<div class="ozet-satir"><span>${esc(s.u.ad)} × ${s.adet}</span><span>${tl(Number(s.u.fiyat) * s.adet)}</span></div>`;
   return `<div class="ozet">
-    ${satirlar ? satirlar.map(s => `<div class="ozet-satir"><span>${esc(s.u.ad)} × ${s.adet}</span><span>${tl(Number(s.u.fiyat) * s.adet)}</span></div>`).join("") : ""}
+    ${cok ? `<p class="bilgi" style="margin:0">Sepetinde ${t.gruplar.length} farklı satıcının ürünü var. Her satıcı kendi kargosunu ayrı gönderir.</p>
+      ${t.gruplar.map(g => `<div class="ozet-grup"><b>${esc(g.ad)}</b>${satirlar ? g.satirlar.map(kalem).join("") : ""}
+        <div class="ozet-satir"><span>Kargo${g.kargo && g.esik - g.ara > 0 ? ` (${tl(g.esik - g.ara)} daha ekle, bedava olsun)` : ""}</span><span>${g.kargo ? tl(g.kargo) : "Bedava"}</span></div></div>`).join("")}`
+    : (satirlar ? satirlar.map(kalem).join("") : "")}
     <div class="ozet-satir"><span>Ara toplam</span><span>${tl(t.ara)}</span></div>
-    <div class="ozet-satir"><span>Kargo</span><span>${t.kargo ? tl(t.kargo) : "Bedava"}</span></div>
+    <div class="ozet-satir"><span>Kargo${cok ? " (toplam)" : ""}</span><span>${t.kargo ? tl(t.kargo) : "Bedava"}</span></div>
     <div class="ozet-satir toplam"><span>Toplam</span><span>${tl(t.toplam)}</span></div>
-    ${t.kargo && eksik > 0 ? `<p class="bilgi">${tl(eksik)} daha ekle, kargo bedava olsun.</p>` : ""}
+    ${!cok && t.kargo && eksik > 0 ? `<p class="bilgi">${tl(eksik)} daha ekle, kargo bedava olsun.</p>` : ""}
   </div>`;
 }
 
@@ -241,7 +277,7 @@ async function siparisSayfasi() {
           <label class="onay" style="align-items:flex-start"><input type="checkbox" required style="margin-top:2px"> <span style="font-size:14px;color:var(--yazi2)"><a href="/kullanim-kosullari" target="_blank">Mesafeli satış sözleşmesini ve ön bilgilendirme formunu</a> okudum, kabul ediyorum.</span></label>
           ${A.ODEME_AKTIF ? `<button class="btn btn-ana" type="submit">${tl(t.toplam)} öde</button>` : `<p class="uyari">Online ödeme çok yakında açılacak.</p>`}
           <div class="mesaj" role="status"></div>
-          <p class="bilgi">Ödeme PayTR güvenli ödeme sayfasında yapılır. Kart bilgilerin bize ulaşmaz.</p>
+          <p class="bilgi">Ödeme PayTR güvenli ödeme sayfasında yapılır. Kart bilgilerin bize ulaşmaz.${t.gruplar.length > 1 ? " Tek ödeme yaparsın; siparişin satıcılara ayrı ayrı iletilir." : ""}</p>
         </form>
       </div>
       <aside class="detay-sag kutu"><h2 style="font-size:22px;margin-bottom:12px">Sipariş özeti</h2>${ozetHtml(t, satirlar)}<p style="margin:12px 0 0"><a href="/sepet">Sepeti düzenle</a></p></aside>
@@ -352,56 +388,89 @@ async function bagisSayfasi(id) {
 async function hesabimEk(el) {
   const uid = S.kullanici.id;
   const sp = await sb.from("magaza_siparisleri").select("*").eq("kullanici_id", uid).neq("durum", "bekliyor").order("created_at", { ascending: false });
+  await saticilariYukle((sp.data || []).map(s => s.satici_id));
   el.innerHTML = `
     <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Siparişlerim</h2>
       ${(sp.data || []).length ? sp.data.map(s => `<div class="satir"><div class="satir-govde">
           <b>${tarih(s.created_at)} · ${tl(s.toplam)}</b>
           <span class="bilgi">${esc(s.kalemler.map(k => `${k.ad} × ${k.adet}`).join(", "))}</span>
+          ${saticiBul(s.satici_id) ? `<span class="bilgi">Satıcı: <a href="/petshop/${s.satici_id}">${esc(saticiBul(s.satici_id).magaza_adi)}</a> · ${esc(saticiBul(s.satici_id).telefon)}</span>` : ""}
           ${s.kargo_takip ? `<span class="bilgi">Kargo: ${esc(s.kargo_firma || "")} ${esc(s.kargo_takip)}</span>` : ""}
         </div><span class="durum d-${s.durum}">${esc(SIPARIS_DURUM[s.durum])}</span></div>`).join("")
       : `<p class="bilgi">Henüz sipariş vermedin. <a href="/magaza">Mağazaya göz at</a></p>`}
-    </section>`;
+    </section>
+    ${window.petshopHesapKutusu ? petshopHesapKutusu() : ""}`;
 }
 
-// ---------- yönetim: ürünler ----------
+// ---------- yönetim: ürünler (sitenin kendi ürünleri ve petshop ürünlerinin onayı) ----------
 async function yUrunler() {
   if (!yonetici()) return;
   meta("Yönetim · Ürünler");
-  const [{ data: l, error }, a] = await Promise.all([sb.from("urunler").select("*").order("created_at", { ascending: false }), ayarlar()]);
+  const q = new URLSearchParams(location.search), filtre = ["bekliyor", "petshop", "site", "reddedildi"].includes(q.get("f")) ? q.get("f") : "";
+  let s = sb.from("urunler").select("*").order("created_at", { ascending: false }).limit(300);
+  if (filtre === "bekliyor" || filtre === "reddedildi") s = s.eq("onay", filtre);
+  if (filtre === "petshop") s = s.not("satici_id", "is", null);
+  if (filtre === "site") s = s.is("satici_id", null);
+  const [{ data: l, error }, a, bek, saticiListe] = await Promise.all([s, ayarlar(),
+    sb.from("urunler").select("id", { count: "exact", head: true }).eq("onay", "bekliyor"),
+    sb.from("saticilar").select("id, magaza_adi")]);
   if (error) throw error;
+  const satAd = id => { const x = (saticiListe.data || []).find(v => v.id === id); return x ? x.magaza_adi : "Petshop"; };
+  const hap = (k, ad) => `<a class="hap" href="/yonetim/urunler${k ? "?f=" + k : ""}"${filtre === k ? ' aria-current="page"' : ""}>${ad}</a>`;
   sayfa(`<div class="kap dar">
     <h1 style="font-size:36px;font-weight:900;margin-bottom:16px">Yönetim</h1>
     ${yonetimSekmeleri("/yonetim/urunler")}
+    <div class="hap-grup" style="margin-bottom:16px">${hap("", "Tümü")}${hap("bekliyor", `Onay bekleyen (${bek.count || 0})`)}${hap("petshop", "Petshop ürünleri")}${hap("site", "Sitenin ürünleri")}${hap("reddedildi", "Reddedilen")}</div>
     <section class="kutu" style="margin-bottom:24px">
       <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
         <h2 style="font-size:22px">Ürünler (${l.length})</h2><a class="btn btn-ana btn-kucuk" href="/yonetim/urun/yeni">Yeni ürün ekle</a>
       </div>
-      ${l.length ? l.map(u => `<div class="satir">
+      ${l.length ? l.map(u => `<div class="satir" style="align-items:flex-start">
         <div class="satir-foto">${u.fotolar && u.fotolar[0] ? `<img src="${esc(u.fotolar[0])}" alt="">` : ""}</div>
-        <div class="satir-govde"><b><a href="/urun/${u.id}" target="_blank">${esc(u.ad)}</a></b>
-          <span class="bilgi">${esc(URUN_KAT[u.kategori])} · ${esc(URUN_TUR[u.tur])} · ${tl(u.fiyat)}</span>
+        <div class="satir-govde"><b><a href="/yonetim/urun/${u.id}">${esc(u.ad)}</a></b>
+          <span class="bilgi">${u.satici_id ? `<a href="/yonetim/petshop/${u.satici_id}">${esc(satAd(u.satici_id))}</a>` : "Sitenin ürünü"} · ${esc(URUN_KAT[u.kategori])} · ${esc(URUN_TUR[u.tur])} · ${tl(u.fiyat)}</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="durum ${u.onay === "onaylandi" ? "d-yayinda" : u.onay === "bekliyor" ? "d-bekliyor" : "d-red"}">${esc(URUN_ONAY[u.onay])}</span>
             <span class="durum ${u.stok <= 0 ? "d-red" : u.stok < 10 ? "d-bekliyor" : "d-yayinda"}">Stok: ${u.stok}</span>
             ${u.aktif ? "" : `<span class="durum d-kaldirildi">Satışta değil</span>`}
           </div>
+          ${u.red_nedeni ? `<span class="bilgi">Ret nedeni: ${esc(u.red_nedeni)}</span>` : ""}
         </div>
-        <div class="satir-dugmeler"><a class="btn btn-kucuk" href="/yonetim/urun/${u.id}">Düzenle</a></div>
-      </div>`).join("") : `<p class="bilgi">Henüz ürün yok. İlk ürünü ekle.</p>`}
+        <div class="satir-dugmeler" style="flex-direction:column;align-items:stretch;min-width:180px">
+          ${u.onay !== "onaylandi" ? `<button type="button" class="btn btn-kucuk btn-ana" data-urun-onayla="${u.id}">Onayla</button>` : ""}
+          ${u.onay !== "reddedildi" ? `<details><summary class="btn btn-kucuk">Reddet</summary><form class="form" data-urun-reddet="${u.id}" style="margin-top:8px">
+            <input name="neden" required maxlength="300" placeholder="Ret nedeni (petshop görür)"><button class="btn btn-kucuk" type="submit">Reddet</button></form></details>` : ""}
+          <a class="btn btn-kucuk" href="/yonetim/urun/${u.id}">Düzenle</a>
+        </div>
+      </div>`).join("") : `<p class="bilgi">Bu listede ürün yok.</p>`}
     </section>
     <form class="kutu form" id="kargo-form">
-      <h2 style="font-size:22px">Kargo</h2>
+      <h2 style="font-size:22px">Sitenin kendi ürünleri: kargo ve komisyon</h2>
       <div class="form-izgara">
         <label class="alan">Kargo ücreti (TL)<input name="kargo_ucreti" type="number" min="0" step="0.01" value="${a.kargo_ucreti}" required></label>
         <label class="alan">Bu tutar ve üstü kargo bedava (TL)<input name="ucretsiz_kargo_esigi" type="number" min="0" step="1" value="${a.ucretsiz_kargo_esigi}" required></label>
+        <label class="alan">Petshop satışlarında genel komisyon (%)<input name="komisyon_orani" type="number" min="0" max="100" step="0.1" value="${a.komisyon_orani ?? 10}" required><small>Petshop başına farklı oran Petshoplar sekmesinden girilir.</small></label>
       </div>
       <button class="btn" type="submit" style="align-self:flex-start">Kaydet</button>
     </form>
   </div>`);
+  $$("[data-urun-onayla]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    const { error: h } = await sb.from("urunler").update({ onay: "onaylandi", red_nedeni: null }).eq("id", b.dataset.urunOnayla);
+    if (h) { b.disabled = false; return bildir(hataMetni(h)); }
+    bildir("Ürün onaylandı, mağazada görünüyor."); yUrunler();
+  });
+  $$("[data-urun-reddet]").forEach(f => f.onsubmit = async e => {
+    e.preventDefault();
+    const { error: h } = await sb.from("urunler").update({ onay: "reddedildi", red_nedeni: new FormData(f).get("neden").trim() }).eq("id", f.dataset.urunReddet);
+    if (h) return bildir(hataMetni(h));
+    bildir("Ürün reddedildi."); yUrunler();
+  });
   $("#kargo-form").onsubmit = async e => {
     e.preventDefault(); const fd = new FormData(e.target);
-    const { error: h } = await sb.from("ayarlar").upsert(["kargo_ucreti", "ucretsiz_kargo_esigi"].map(k => ({ anahtar: k, deger: Number(fd.get(k)) })));
+    const { error: h } = await sb.from("ayarlar").upsert(["kargo_ucreti", "ucretsiz_kargo_esigi", "komisyon_orani"].map(k => ({ anahtar: k, deger: Number(fd.get(k)) })));
     if (h) return bildir(hataMetni(h));
-    AYAR_ONBELLEK = null; bildir("Kargo ayarları kaydedildi.");
+    AYAR_ONBELLEK = null; bildir("Ayarlar kaydedildi.");
   };
 }
 
@@ -413,20 +482,28 @@ async function magazaFotosuYukle(dosya, klasor) {
   return sb.storage.from("magaza-fotolari").getPublicUrl(yol).data.publicUrl;
 }
 
-async function yUrunFormu(id) {
-  if (!yonetici()) return;
+const yUrunFormu = id => urunFormu(id, "yonetim");
+
+// Ürün formu: yönetici (her ürün) ve petshop (yalnızca kendi ürünleri, kaydedince onaya düşer) ortak kullanır.
+async function urunFormu(id, mod) {
+  const petshop = mod === "petshop";
+  if (petshop ? !(await petshopHazir()) : !yonetici()) return;
+  const geri = petshop ? "/petshop-paneli" : "/yonetim/urunler";
   let u = { kategori: "mama", tur: "kedi", stok: 0, aktif: true, fotolar: [] };
   if (id !== "yeni") {
     const { data, error } = await sb.from("urunler").select("*").eq("id", id).maybeSingle();
     if (error) throw error;
-    if (!data) { sayfa(`<div class="kap bos-durum"><h1>Ürün bulunamadı</h1><p><a href="/yonetim/urunler">Ürünlere dön</a></p></div>`); return; }
+    if (!data || (petshop && data.satici_id !== S.satici.id)) { sayfa(`<div class="kap bos-durum"><h1>Ürün bulunamadı</h1><p><a href="${geri}">Ürünlere dön</a></p></div>`); return; }
     u = data;
   }
   meta(id === "yeni" ? "Yeni ürün" : "Ürünü düzenle");
   let fotolar = [...(u.fotolar || [])];
+  const saticiAdi = !petshop && u.satici_id ? ((await sb.from("saticilar").select("magaza_adi").eq("id", u.satici_id).maybeSingle()).data || {}).magaza_adi : "";
   sayfa(`<div class="kap dar">
-    <p style="margin:0 0 12px"><a href="/yonetim/urunler">Ürünlere dön</a></p>
-    ${baslikH1(id === "yeni" ? "Yeni ürün" : "Ürünü düzenle")}
+    <p style="margin:0 0 12px"><a href="${geri}">Ürünlere dön</a></p>
+    ${baslikH1(id === "yeni" ? "Yeni ürün" : "Ürünü düzenle", petshop ? "Eklediğin ürünler ve ad, fiyat, açıklama, fotoğraf değişiklikleri yönetici onayından sonra mağazada görünür. Stok ve satışta/değil değişiklikleri hemen geçerli olur." : saticiAdi ? `Bu ürün ${esc(saticiAdi)} petshopuna ait.` : "")}
+    ${u.onay === "reddedildi" ? `<p class="uyari">Bu ürün reddedildi${u.red_nedeni ? `: ${esc(u.red_nedeni)}` : "."} Düzeltip kaydedince yeniden onaya gönderilir.</p>` : ""}
+    ${petshop && u.onay === "bekliyor" && id !== "yeni" ? `<p class="uyari">Bu ürün yönetici onayı bekliyor.</p>` : ""}
     <form class="kutu form" id="urun-form">
       <label class="alan">Ürün adı<input name="ad" required maxlength="120" value="${esc(u.ad || "")}" placeholder="Örn. Yetişkin kedi maması tavuklu 2 kg"></label>
       <div class="form-izgara">
@@ -443,7 +520,7 @@ async function yUrunFormu(id) {
         <label class="btn" style="align-self:flex-start">Fotoğraf ekle<input type="file" accept="image/*" multiple id="foto-sec" class="gizli"></label>
       </div>
       <label class="onay"><input type="checkbox" name="aktif"${u.aktif ? " checked" : ""}> Satışta</label>
-      <button class="btn btn-ana" type="submit" id="kaydet">${id === "yeni" ? "Ürünü ekle" : "Kaydet"}</button>
+      <button class="btn btn-ana" type="submit" id="kaydet">${id === "yeni" ? (petshop ? "Onaya gönder" : "Ürünü ekle") : "Kaydet"}</button>
       <div class="mesaj" role="status" id="urun-mesaj"></div>
     </form>
   </div>`);
@@ -454,7 +531,7 @@ async function yUrunFormu(id) {
   fotoCiz();
   $("#foto-sec").onchange = async e => {
     const m = $("#urun-mesaj"); $("#kaydet").disabled = true; mesaj(m, "Fotoğraflar yükleniyor…");
-    try { for (const d of [...e.target.files].slice(0, 8)) { fotolar.push(await magazaFotosuYukle(d, "urunler")); fotoCiz(); } m.textContent = ""; m.className = "mesaj"; }
+    try { for (const d of [...e.target.files].slice(0, 8)) { fotolar.push(await magazaFotosuYukle(d, petshop ? `satici/${S.kullanici.id}` : "urunler")); fotoCiz(); } m.textContent = ""; m.className = "mesaj"; }
     catch (err) { mesaj(m, hataMetni(err), true); }
     $("#kaydet").disabled = false; e.target.value = "";
   };
@@ -465,9 +542,13 @@ async function yUrunFormu(id) {
       fiyat: Number(fd.get("fiyat")), eski_fiyat: fd.get("eski_fiyat") ? Number(fd.get("eski_fiyat")) : null,
       stok: parseInt(fd.get("stok"), 10) || 0, aciklama: fd.get("aciklama").trim() || null, fotolar, aktif: !!fd.get("aktif"),
     };
-    const r = id === "yeni" ? await sb.from("urunler").insert(kayit).select("id").single() : await sb.from("urunler").update(kayit).eq("id", id).select("id").single();
+    if (petshop && id === "yeni") kayit.satici_id = S.satici.id;
+    $("#kaydet").disabled = true;
+    const r = id === "yeni" ? await sb.from("urunler").insert(kayit).select("id, onay").single() : await sb.from("urunler").update(kayit).eq("id", id).select("id, onay").single();
+    $("#kaydet").disabled = false;
     if (r.error) return mesaj($("#urun-mesaj"), hataMetni(r.error), true);
-    bildir(id === "yeni" ? "Ürün eklendi." : "Ürün kaydedildi."); git("/yonetim/urunler");
+    bildir(petshop && r.data.onay === "bekliyor" ? "Kaydedildi. Ürün yönetici onayından sonra mağazada görünecek." : id === "yeni" ? "Ürün eklendi." : "Ürün kaydedildi.");
+    git(geri);
   };
 }
 
@@ -479,21 +560,25 @@ async function ySiparisler() {
   let s = sb.from("magaza_siparisleri").select("*").order("created_at", { ascending: false }).limit(100);
   if (filtre === "acik") s = s.in("durum", ["odendi", "hazirlaniyor"]);
   else if (SIPARIS_DURUM[filtre]) s = s.eq("durum", filtre);
-  const { data: l, error } = await s;
+  const [{ data: l, error }, saticiListe] = await Promise.all([s, sb.from("saticilar").select("id, magaza_adi")]);
   if (error) throw error;
+  const satAd = id => { const x = (saticiListe.data || []).find(v => v.id === id); return x ? x.magaza_adi : "Petshop"; };
   const hap = (k, a) => `<a class="hap" href="/yonetim/siparisler${k === "acik" ? "" : "?durum=" + k}"${filtre === k ? ' aria-current="page"' : ""}>${a}</a>`;
   sayfa(`<div class="kap dar">
     <h1 style="font-size:36px;font-weight:900;margin-bottom:16px">Yönetim</h1>
     ${yonetimSekmeleri("/yonetim/siparisler")}
     <div class="hap-grup" style="margin-bottom:16px">${hap("acik", "Hazırlanacaklar")}${hap("kargoda", "Kargoda")}${hap("teslim", "Teslim edildi")}${hap("iptal", "İptal")}${hap("tumu", "Tümü")}</div>
+    <p class="bilgi" style="margin-bottom:16px">Petshop siparişlerini petshop kendisi hazırlar ve kargolar; sen burada takip edebilir, gerekirse iptal edebilirsin. Petshoplara aktarılacak tutarlar Petshoplar sekmesindedir.</p>
     <section class="kutu">
       ${l.length ? l.map(x => `<form class="satir" data-siparis="${x.id}" style="align-items:flex-start">
         <div class="satir-govde">
           <b>${esc(x.ad)} · ${tl(x.toplam)}</b>
+          <span class="bilgi">${x.satici_id ? `Satıcı: <a href="/yonetim/petshop/${x.satici_id}">${esc(satAd(x.satici_id))}</a> · komisyon ${tl(x.komisyon)} · petshopa ${tl(x.satici_hakedis)}${x.hakedis_odendi_at ? " (aktarıldı)" : ""}` : "Sitenin kendi siparişi"}</span>
           <span class="bilgi">${tarih(x.created_at)} · ${esc(x.siparis_no)}</span>
           <span>${esc(x.kalemler.map(k => `${k.ad} × ${k.adet}`).join(", "))}</span>
           <span class="bilgi">${esc(x.telefon)} · ${esc(x.email)}</span>
           <span class="bilgi">${esc(x.adres)}, ${esc(x.ilce || "")} / ${esc(x.il)}</span>
+          ${x.kargo_takip ? `<span class="bilgi">Kargo: ${esc(x.kargo_firma || "")} ${esc(x.kargo_takip)}</span>` : ""}
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:220px">
           <span class="durum d-${x.durum}">${esc(SIPARIS_DURUM[x.durum])}</span>
@@ -508,6 +593,7 @@ async function ySiparisler() {
   </div>`);
   $$("[data-siparis]").forEach(f => f.onsubmit = async e => {
     e.preventDefault(); const fd = new FormData(f);
+    if (fd.get("durum") === "iptal" && !confirm("Sipariş iptal edilecek. Kart ödemesinin iadesini PayTR panelinden ayrıca yapman gerekir. Devam edilsin mi?")) return;
     const { error: h } = await sb.from("magaza_siparisleri").update({ durum: fd.get("durum"), kargo_firma: fd.get("kargo_firma") || null, kargo_takip: fd.get("kargo_takip") || null }).eq("id", f.dataset.siparis);
     if (h) return bildir(hataMetni(h));
     bildir("Sipariş güncellendi."); ySiparisler();

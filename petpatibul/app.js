@@ -59,6 +59,7 @@ function hataMetni(e) {
   if (/basvurular_tekil|duplicate key/i.test(m)) return "Bu ilana zaten başvurdunuz.";
   if (/row-level security|permission|yetkiniz yok/i.test(m)) return "Bu işlem için yetkiniz yok. Hesabın kısıtlandıysa bizimle iletişime geç.";
   if (/arasında olmalı|onay beklemiyor/i.test(m)) return m.replace(/^.*?: /, "") + ".";
+  if (/rate limit|over_email_send|429/i.test(m + " " + (e && (e.code || e.status)))) return "Kısa sürede çok fazla e-posta istendi. Lütfen bir saat sonra tekrar deneyin.";
   if (/Failed to fetch|NetworkError/i.test(m)) return "Bağlantı kurulamadı. İnternetinizi kontrol edip tekrar deneyin.";
   return "Bir sorun oldu: " + m;
 }

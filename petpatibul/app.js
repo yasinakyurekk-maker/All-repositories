@@ -426,7 +426,7 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
   let s = sb.from("yayindaki_ilanlar").select("*", { count: "exact" }).eq("kategori", kategori);
   if (tur) s = s.eq("tur", tur);
   if (il) s = s.eq("il", il);
-  if (il && f.ilce) s = s.eq("ilce", f.ilce);
+  if (il && f.ilce) s = s.ilike("ilce", f.ilce.replace(/[%_\\]/g, ""));
   if (f.yas && YAS[f.yas]) s = s.eq("yas_grubu", f.yas);
   if (f.cinsiyet && CINS[f.cinsiyet]) s = s.eq("cinsiyet", f.cinsiyet);
   secOz.forEach(k => { s = s.eq(k, true); });

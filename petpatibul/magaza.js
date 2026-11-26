@@ -128,16 +128,24 @@ async function magazaSayfasi() {
   const q = new URLSearchParams(location.search);
   const kat = URUN_KAT[q.get("kategori")] ? q.get("kategori") : "", tur = URUN_TUR[q.get("tur")] ? q.get("tur") : "";
   const sira = ["ucuz", "pahali"].includes(q.get("sira")) ? q.get("sira") : "";
+  const mag = q.get("magaza") === "site" || /^[0-9a-f-]{36}$/.test(q.get("magaza") || "") ? q.get("magaza") : "";
+  // Mağazalar (onaylı petshoplar) ve her birinin yayındaki ürün sayısı
+  const [{ data: dukkanlar }, { data: sayim }] = await Promise.all([
+    sb.from("saticilar_acik").select("id, magaza_adi, logo, il, ilce").order("magaza_adi"),
+    sb.from("urunler").select("satici_id").eq("aktif", true),
+  ]);
+  const adet = id => (sayim || []).filter(u => (u.satici_id || null) === id).length;
+  const magAd = mag === "site" ? "PetPatiBul" : mag ? ((dukkanlar || []).find(d => d.id === mag) || {}).magaza_adi || "" : "";
   const turAd = tur && tur !== "hepsi" ? TUR[tur] : "";
   const baslik = `${turAd ? turAd + " " : ""}${kat ? (kat === "mama" ? "maması" : URUN_KAT[kat].toLocaleLowerCase("tr")) : "maması ve ekipmanları"}`.trim();
   const tamBaslik = turAd || kat ? baslik.charAt(0).toLocaleUpperCase("tr") + baslik.slice(1) : "Mama ve ekipman mağazası";
   meta(tamBaslik, `${tamBaslik}: kedi ve köpek maması, kum, tasma, taşıma çantası ve oyuncak. Belirli tutar üzeri ücretsiz kargo.`);
-  const yol = (deg) => { const o = { kategori: kat, tur, sira, ...deg }; const s = new URLSearchParams(Object.entries(o).filter(([, v]) => v)).toString(); return "/magaza" + (s ? "?" + s : ""); };
+  const yol = (deg) => { const o = { magaza: mag, kategori: kat, tur, sira, ...deg }; const s = new URLSearchParams(Object.entries(o).filter(([, v]) => v)).toString(); return "/magaza" + (s ? "?" + s : ""); };
   const hap = (etiket, href, secili) => `<a class="hap" href="${esc(href)}"${secili ? ' aria-current="page"' : ""}>${esc(etiket)}</a>`;
   const a = await ayarlar();
   sayfa(`<div class="kap">
     <div class="liste-bas">
-      <div><h1>${esc(tamBaslik)}</h1><p>${tl(a.ucretsiz_kargo_esigi)} ve üzeri siparişlerde kargo bedava.</p></div>
+      <div><h1>${esc(magAd ? magAd + " ürünleri" : tamBaslik)}</h1><p>${tl(a.ucretsiz_kargo_esigi)} ve üzeri siparişlerde kargo bedava.</p></div>
       <label class="alan" style="flex-direction:row;align-items:center;gap:8px;font-weight:500;color:var(--soluk)">Sırala
         <select id="m-sira" style="width:auto">
           <option value=""${!sira ? " selected" : ""}>En yeni</option>
@@ -146,6 +154,16 @@ async function magazaSayfasi() {
         </select>
       </label>
     </div>
+    ${(dukkanlar || []).length ? `<section class="dukkanlar" aria-label="Mağazalar">
+      <div class="bolum-bas" style="margin-bottom:10px"><h2 style="font-size:22px">Mağazalar</h2>${mag ? `<a href="${esc(yol({ magaza: "" }))}">Tüm mağazalar</a>` : ""}</div>
+      <div class="dukkan-serit">
+        ${adet(null) ? `<a class="dukkan-kart${mag === "site" ? " secili" : ""}" href="${esc(yol({ magaza: mag === "site" ? "" : "site" }))}"><span class="dukkan-logo">${ikon.canta}</span><span><b>PetPatiBul</b><small>${adet(null)} ürün</small></span></a>` : ""}
+        ${dukkanlar.map(d => `<a class="dukkan-kart${mag === d.id ? " secili" : ""}" href="${esc(yol({ magaza: mag === d.id ? "" : d.id }))}">
+          ${d.logo ? `<img class="dukkan-logo" src="${esc(d.logo)}" alt="" loading="lazy">` : `<span class="dukkan-logo">${ikon.canta}</span>`}
+          <span><b>${esc(d.magaza_adi)}</b><small>${esc(d.il)} · ${adet(d.id)} ürün</small></span></a>`).join("")}
+      </div>
+      ${mag && mag !== "site" ? `<p style="margin:10px 0 0"><a href="/petshop/${esc(mag)}">${esc(magAd)} mağaza sayfasına git</a></p>` : ""}
+    </section>` : ""}
     <div class="magaza-filtre">
       <div class="hap-grup" aria-label="Kategori">${hap("Tümü", yol({ kategori: "" }), !kat)}${Object.entries(URUN_KAT).map(([k, v]) => hap(v, yol({ kategori: k }), kat === k)).join("")}</div>
       <div class="hap-grup" aria-label="Hayvan">${hap("Tüm hayvanlar", yol({ tur: "" }), !tur)}${["kedi", "kopek", "kus"].map(k => hap(TUR[k], yol({ tur: k }), tur === k)).join("")}</div>
@@ -156,6 +174,8 @@ async function magazaSayfasi() {
   </div>`);
   $("#m-sira").onchange = e => git(yol({ sira: e.target.value }));
   let s = sb.from("urunler").select("*").eq("aktif", true);
+  if (mag === "site") s = s.is("satici_id", null);
+  else if (mag) s = s.eq("satici_id", mag);
   if (kat) s = s.eq("kategori", kat);
   if (tur) s = s.in("tur", tur === "hepsi" ? ["hepsi"] : [tur, "hepsi"]);
   s = sira ? s.order("fiyat", { ascending: sira === "ucuz" }) : s.order("created_at", { ascending: false });

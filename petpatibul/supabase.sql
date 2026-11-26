@@ -106,8 +106,14 @@ begin
   if new.durum in ('sahiplendi','kaldirildi') and old.durum <> new.durum then
     return new;                                   -- sahibi ilanı kapatabilir
   end if;
-  if old.durum in ('sahiplendi','kaldirildi') then
-    new.durum := old.durum;                       -- kapanmış ilan geri açılamaz
+  if old.durum = 'kaldirildi' then
+    new.durum := old.durum;                       -- kaldırılmış ilan geri açılamaz
+    return new;
+  end if;
+  if old.durum = 'sahiplendi' then
+    if new.durum <> 'sahiplendi' then
+      new.durum := 'bekliyor';                    -- sahibi yeniden açabilir, onaydan sonra yayına girer
+    end if;
     return new;
   end if;
   new.durum := 'bekliyor';                        -- içerik değişti: yeniden onaya düşer

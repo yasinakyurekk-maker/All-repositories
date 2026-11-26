@@ -571,7 +571,7 @@ async function basvuruAlani(i, benim, yayinda) {
       <h2 style="font-size:22px">Bu senin ilanın</h2>
       ${i.telefon ? `<p class="bilgi">İlgilenenler seni <b>${esc(telBicim(i.telefon))}</b> numarasından ${i.whatsapp ? "arayabilir ya da WhatsApp'tan yazabilir" : "arayabilir"}.</p>`
         : `<p class="uyari">İlanında iletişim numarası yok. Numara ekle ki ilgilenenler sana ulaşabilsin.</p>`}
-      ${["sahiplendi", "kaldirildi"].includes(i.durum) ? "" : `<a class="btn" href="/ilan-duzenle/${i.id}">${i.telefon ? "İlanı düzenle" : "Numara ekle"}</a>`}
+      ${i.durum === "kaldirildi" ? "" : `<a class="btn" href="/ilan-duzenle/${i.id}">${i.telefon ? "İlanı düzenle" : "Numara ekle"}</a>`}
       ${["bekliyor", "yayinda"].includes(i.durum) ? (vitrin
         ? `<p class="bilgi">Öne çıkarma ${tarih(i.one_cikan_bitis)} tarihine kadar sürüyor.</p><a class="btn btn-vitrin" href="/one-cikar/${i.id}">Süreyi uzat</a>`
         : `<a class="btn btn-vitrin" href="/one-cikar/${i.id}">İlanı öne çıkar</a>`) : ""}
@@ -801,7 +801,8 @@ async function hesabimSayfasi() {
       </div>
       <div class="satir-dugmeler">
         ${acik ? `<a class="btn btn-kucuk btn-vitrin" href="/one-cikar/${x.id}">${oneCikan(x) ? "Süreyi uzat" : "Öne çıkar"}</a>` : ""}
-        ${x.durum !== "sahiplendi" && x.durum !== "kaldirildi" ? `<a class="btn btn-kucuk" href="/ilan-duzenle/${x.id}">Düzenle</a>` : ""}
+        ${x.durum !== "kaldirildi" ? `<a class="btn btn-kucuk" href="/ilan-duzenle/${x.id}">Düzenle</a>` : ""}
+        ${x.durum === "sahiplendi" ? `<button class="btn btn-kucuk btn-ana" data-yeniden="${x.id}">Yeniden yayına al</button>` : ""}
         ${x.durum === "yayinda" ? `<button class="btn btn-kucuk" data-kapat="${x.id}" data-durum="sahiplendi">${x.kategori === "sahiplendirme" ? "Sahiplendi" : "Kavuştu"}</button>` : ""}
         ${acik || x.durum === "reddedildi" ? `<button class="btn btn-kucuk" data-kapat="${x.id}" data-durum="kaldirildi">Kaldır</button>` : ""}
       </div>
@@ -823,6 +824,12 @@ async function hesabimSayfasi() {
   </div>`);
 
   if (window.hesabimEk) await hesabimEk($("#hesabim-ek"));
+  $$("[data-yeniden]").forEach(b => b.onclick = async () => {
+    if (!confirm("İlan yeniden açılacak. Kısa bir kontrolden sonra tekrar yayına girer. Onaylıyor musun?")) return;
+    const { error } = await sb.from("ilanlar").update({ durum: "bekliyor" }).eq("id", b.dataset.yeniden);
+    if (error) return bildir(hataMetni(error));
+    bildir("İlan yeniden açıldı. Onaylanınca tekrar yayına girecek."); hesabimSayfasi();
+  });
   $$("[data-kapat]").forEach(b => b.onclick = async () => {
     const d = b.dataset.durum;
     if (!confirm(d === "sahiplendi" ? "Harika! İlan kapatılacak ve listeden kalkacak. Onaylıyor musun?" : "İlan kaldırılacak. Bu işlem geri alınamaz. Emin misin?")) return;

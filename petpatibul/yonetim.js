@@ -115,7 +115,7 @@ async function yIlanlar() {
         <div class="satir-dugmeler" style="flex-direction:column;align-items:stretch;min-width:200px">
           ${x.durum === "bekliyor" ? `<button class="btn btn-kucuk btn-ana" data-ilan="${x.id}" data-yap="yayinda">Onayla ve yayınla</button><button class="btn btn-kucuk" data-ilan="${x.id}" data-yap="reddedildi">Reddet</button>` : ""}
           ${x.durum === "yayinda" ? `<button class="btn btn-kucuk" data-ilan="${x.id}" data-yap="kaldirildi">Yayından kaldır</button>` : ""}
-          ${["reddedildi", "kaldirildi"].includes(x.durum) ? `<button class="btn btn-kucuk" data-ilan="${x.id}" data-yap="yayinda">Yayına al</button>` : ""}
+          ${["reddedildi", "kaldirildi", "sahiplendi"].includes(x.durum) ? `<button class="btn btn-kucuk" data-ilan="${x.id}" data-yap="yayinda">${x.durum === "sahiplendi" ? "Yeniden yayına al" : "Yayına al"}</button>` : ""}
           <a class="btn btn-kucuk" href="/ilan-duzenle/${x.id}">Düzenle</a>
           <form class="vitrin-form" data-vitrin="${x.id}"><input name="gun" type="number" min="1" max="365" value="7" aria-label="Gün"><button class="btn btn-kucuk btn-vitrin" type="submit">${oneCikan(x) ? "Gün ekle" : "Öne çıkar"}</button></form>
           ${oneCikan(x) ? `<button class="btn btn-kucuk" data-vitrin-bitir="${x.id}">Öne çıkarmayı bitir</button>` : ""}

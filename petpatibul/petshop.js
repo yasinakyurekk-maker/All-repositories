@@ -4,7 +4,7 @@
 "use strict";
 
 const SATICI_DURUM = { bekliyor: "Onay bekliyor", onaylandi: "Onaylandı", reddedildi: "Reddedildi", askida: "Askıya alındı" };
-SEKMELER.splice(SEKMELER.findIndex(([h]) => h === "/yonetim/urunler") + 1, 0, ["/yonetim/petshoplar", "Petshoplar"]);
+SEKMELER.splice(SEKMELER.findIndex(([h]) => h === "/yonetim/urunler") + 1, 0, ["/yonetim/petshoplar", "Mağazalar"]);
 
 // ---------- oturum: kullanıcının petshop kaydı ----------
 S.satici = null;
@@ -270,11 +270,17 @@ async function petshopSayfasi(id) {
 // ---------- yönetim: petshoplar ----------
 async function yPetshoplar() {
   if (!yonetici()) return;
-  meta("Yönetim · Petshoplar");
+  meta("Yönetim · Mağazalar");
   const filtre = new URLSearchParams(location.search).get("durum") || "";
   let q = sb.from("saticilar").select("*").order("created_at", { ascending: false });
   if (SATICI_DURUM[filtre]) q = q.eq("durum", filtre);
-  const [{ data: l, error }, { data: h }] = await Promise.all([q, sb.from("satici_hakedisleri").select("*")]);
+  const [{ data: l, error }, { data: h }, { data: ur }] = await Promise.all([q, sb.from("satici_hakedisleri").select("*"),
+    sb.from("urunler").select("satici_id, onay, aktif").limit(5000)]);
+  const say = (id, f) => (ur || []).filter(u => (u.satici_id || null) === id && (!f || f(u))).length;
+  const sayilar = id => {
+    const t = say(id), y = say(id, u => u.onay === "onaylandi" && u.aktif), b = say(id, u => u.onay === "bekliyor"), r = say(id, u => u.onay === "reddedildi");
+    return `<div class="sayi-satir"><span>${t} ürün</span><span class="durum d-yayinda">${y} yayında</span>${b ? `<span class="durum d-bekliyor">${b} onay bekliyor</span>` : ""}${r ? `<span class="durum d-red">${r} reddedilen/kaldırılan</span>` : ""}</div>`;
+  };
   if (error) throw error;
   const hak = id => (h || []).find(x => x.satici_id === id) || { odenebilir: 0, yolda: 0, aktarilan: 0, komisyon_toplam: 0 };
   const bek = l.filter(s => s.durum === "bekliyor").length;
@@ -288,15 +294,23 @@ async function yPetshoplar() {
       <div><span>Toplam komisyon geliri</span><b style="font-size:24px">${tl(komisyon)}</b></div>
     </section>
     <div class="hap-grup" style="margin-bottom:16px">${hap("", "Tümü")}${hap("bekliyor", `Onay bekleyen (${bek})`)}${hap("onaylandi", "Onaylı")}${hap("reddedildi", "Reddedilen")}${hap("askida", "Askıda")}</div>
+    <p class="bilgi" style="margin-bottom:12px">Bir mağazaya tıklayınca tüm ürünlerini görür, uygunsuz olanı yayından kaldırabilirsin.</p>
     <section class="kutu">
+      ${!filtre && say(null) ? `<a class="satir magaza-satir" href="/yonetim/urunler?m=site">
+        <div class="satir-foto"><span class="petshop-logo-kucuk">${ikon.canta}</span></div>
+        <div class="satir-govde"><b>Sitenin ürünleri</b><span class="bilgi">PetPatiBul'un kendi sattığı ürünler</span>${sayilar(null)}</div>
+        <div class="satir-dugmeler"><span class="btn btn-kucuk btn-ana">Ürünleri gör</span></div></a>` : ""}
       ${l.length ? l.map(s => `<div class="satir">
         <div class="satir-foto">${s.logo ? `<img src="${esc(s.logo)}" alt="">` : ""}</div>
-        <div class="satir-govde"><b><a href="/yonetim/petshop/${s.id}">${esc(s.magaza_adi)}</a></b>
+        <div class="satir-govde"><b><a href="/yonetim/urunler?m=${s.id}">${esc(s.magaza_adi)}</a></b>
           <span class="bilgi">${esc(s.yetkili)} · ${esc(s.ilce ? s.ilce + " / " : "")}${esc(s.il)} · ${tarih(s.created_at)}</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="durum ${s.durum === "onaylandi" ? "d-yayinda" : s.durum === "bekliyor" ? "d-bekliyor" : "d-red"}">${esc(SATICI_DURUM[s.durum])}</span>
             ${Number(hak(s.id).odenebilir) > 0 ? `<span class="durum d-bekliyor">Aktarılacak ${tl(hak(s.id).odenebilir)}</span>` : ""}</div>
+          ${sayilar(s.id)}
         </div>
-        <div class="satir-dugmeler"><a class="btn btn-kucuk${s.durum === "bekliyor" ? " btn-ana" : ""}" href="/yonetim/petshop/${s.id}">${s.durum === "bekliyor" ? "İncele" : "Aç"}</a></div>
+        <div class="satir-dugmeler" style="flex-direction:column;align-items:stretch;min-width:160px">
+          <a class="btn btn-kucuk btn-ana" href="/yonetim/urunler?m=${s.id}">Ürünleri gör</a>
+          <a class="btn btn-kucuk" href="/yonetim/petshop/${s.id}">${s.durum === "bekliyor" ? "Başvuruyu incele" : "Mağaza bilgileri"}</a></div>
       </div>`).join("") : `<p class="bilgi">Bu listede petshop yok. Petshoplar /petshop-ol sayfasından başvurur.</p>`}
     </section>
   </div>`);

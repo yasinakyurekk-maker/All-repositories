@@ -333,7 +333,7 @@ async function yPetshop(id) {
         ${s.durum !== "onaylandi" ? `<button type="button" class="btn btn-ana" data-satici-durum="onaylandi">Onayla</button>` : ""}
         ${s.durum === "bekliyor" ? `<button type="button" class="btn" data-satici-durum="reddedildi">Reddet</button>` : ""}
         ${s.durum === "onaylandi" ? `<button type="button" class="btn" data-satici-durum="askida">Askıya al</button>` : ""}
-        <a class="btn" href="/yonetim/urunler?f=petshop">Ürünlerini gör</a>
+        <a class="btn" href="/yonetim/urunler?m=${s.id}">Ürünlerini gör</a>
       </div>
       <label class="alan">Ret veya askıya alma nedeni (petshop görür)<input id="satici-neden" maxlength="300" value="${esc(s.red_nedeni || "")}"></label>
       <label class="alan">Bu petshop için komisyon (%)<input id="satici-komisyon" type="number" min="0" max="100" step="0.1" value="${esc(s.komisyon_orani ?? "")}" placeholder="Boşsa genel oran: ${esc(a.komisyon_orani ?? 10)}" style="max-width:240px"></label>

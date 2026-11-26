@@ -406,26 +406,42 @@ async function hesabimEk(el) {
 async function yUrunler() {
   if (!yonetici()) return;
   meta("Yönetim · Ürünler");
-  const q = new URLSearchParams(location.search), filtre = ["bekliyor", "petshop", "site", "reddedildi"].includes(q.get("f")) ? q.get("f") : "";
-  let s = sb.from("urunler").select("*").order("created_at", { ascending: false }).limit(300);
-  if (filtre === "bekliyor" || filtre === "reddedildi") s = s.eq("onay", filtre);
-  if (filtre === "petshop") s = s.not("satici_id", "is", null);
-  if (filtre === "site") s = s.is("satici_id", null);
+  const q = new URLSearchParams(location.search), filtre = ["bekliyor", "onaylandi", "reddedildi"].includes(q.get("f")) ? q.get("f") : "";
+  const mag = q.get("m") || "";
+  let s = sb.from("urunler").select("*").order("created_at", { ascending: false }).limit(500);
+  if (mag === "site") s = s.is("satici_id", null);
+  else if (/^[0-9a-f-]{36}$/.test(mag)) s = s.eq("satici_id", mag);
+  if (filtre) s = s.eq("onay", filtre);
   const [{ data: l, error }, a, bek, saticiListe] = await Promise.all([s, ayarlar(),
     sb.from("urunler").select("id", { count: "exact", head: true }).eq("onay", "bekliyor"),
-    sb.from("saticilar").select("id, magaza_adi")]);
+    sb.from("saticilar").select("id, magaza_adi, durum").order("magaza_adi")]);
   if (error) throw error;
   const satAd = id => { const x = (saticiListe.data || []).find(v => v.id === id); return x ? x.magaza_adi : "Petshop"; };
-  const hap = (k, ad) => `<a class="hap" href="/yonetim/urunler${k ? "?f=" + k : ""}"${filtre === k ? ' aria-current="page"' : ""}>${ad}</a>`;
+  const yol = (f, m) => { const u = new URLSearchParams(); if (f) u.set("f", f); if (m) u.set("m", m); const t = u.toString(); return "/yonetim/urunler" + (t ? "?" + t : ""); };
+  const hap = (k, ad) => `<a class="hap" href="${yol(k, mag)}"${filtre === k ? ' aria-current="page"' : ""}>${ad}</a>`;
+  // Ürünler mağaza mağaza gruplanır: önce sitenin ürünleri, sonra petshoplar ada göre.
+  const gruplar = [];
+  const grupBul = id => { let g = gruplar.find(x => x.id === id); if (!g) { g = { id, ad: id ? satAd(id) : "Sitenin ürünleri", l: [] }; gruplar.push(g); } return g; };
+  l.forEach(u => grupBul(u.satici_id || null).l.push(u));
+  gruplar.sort((a, b) => (a.id ? 1 : 0) - (b.id ? 1 : 0) || a.ad.localeCompare(b.ad, "tr"));
   sayfa(`<div class="kap dar">
     <h1 style="font-size:36px;font-weight:900;margin-bottom:16px">Yönetim</h1>
     ${yonetimSekmeleri("/yonetim/urunler")}
-    <div class="hap-grup" style="margin-bottom:16px">${hap("", "Tümü")}${hap("bekliyor", `Onay bekleyen (${bek.count || 0})`)}${hap("petshop", "Petshop ürünleri")}${hap("site", "Sitenin ürünleri")}${hap("reddedildi", "Reddedilen")}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:16px">
+      <label class="alan" style="min-width:240px">Mağaza<select id="magaza-sec">
+        <option value="">Tüm mağazalar</option>
+        <option value="site"${mag === "site" ? " selected" : ""}>Sitenin ürünleri</option>
+        ${(saticiListe.data || []).map(v => `<option value="${v.id}"${mag === v.id ? " selected" : ""}>${esc(v.magaza_adi)}${v.durum !== "onaylandi" ? " (" + esc(SATICI_DURUM[v.durum] || v.durum) + ")" : ""}</option>`).join("")}
+      </select></label>
+      <div class="hap-grup">${hap("", "Tümü")}${hap("bekliyor", `Onay bekleyen (${bek.count || 0})`)}${hap("onaylandi", "Yayında")}${hap("reddedildi", "Reddedilen / kaldırılan")}</div>
+    </div>
     <section class="kutu" style="margin-bottom:24px">
       <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
         <h2 style="font-size:22px">Ürünler (${l.length})</h2><a class="btn btn-ana btn-kucuk" href="/yonetim/urun/yeni">Yeni ürün ekle</a>
       </div>
-      ${l.length ? l.map(u => `<div class="satir" style="align-items:flex-start">
+      ${l.length ? gruplar.map(g => `<div class="urun-grup">
+        <div class="urun-grup-bas"><b>${g.id ? `<a href="/yonetim/petshop/${g.id}">${esc(g.ad)}</a>` : esc(g.ad)}</b><span class="bilgi">${g.l.length} ürün</span>${mag ? "" : `<a class="btn btn-kucuk" href="${yol(filtre, g.id || "site")}">Yalnızca bu mağaza</a>`}</div>
+        ${g.l.map(u => `<div class="satir" style="align-items:flex-start">
         <div class="satir-foto">${u.fotolar && u.fotolar[0] ? `<img src="${esc(u.fotolar[0])}" alt="">` : ""}</div>
         <div class="satir-govde"><b><a href="/yonetim/urun/${u.id}">${esc(u.ad)}</a></b>
           <span class="bilgi">${u.satici_id ? `<a href="/yonetim/petshop/${u.satici_id}">${esc(satAd(u.satici_id))}</a>` : "Sitenin ürünü"} · ${esc(URUN_KAT[u.kategori])} · ${esc(URUN_TUR[u.tur])} · ${tl(u.fiyat)}</span>
@@ -434,14 +450,15 @@ async function yUrunler() {
             <span class="durum ${u.stok <= 0 ? "d-red" : u.stok < 10 ? "d-bekliyor" : "d-yayinda"}">Stok: ${u.stok}</span>
             ${u.aktif ? "" : `<span class="durum d-kaldirildi">Satışta değil</span>`}
           </div>
-          ${u.red_nedeni ? `<span class="bilgi">Ret nedeni: ${esc(u.red_nedeni)}</span>` : ""}
+          ${u.red_nedeni ? `<span class="bilgi">Ret / kaldırma nedeni: ${esc(u.red_nedeni)}</span>` : ""}
         </div>
         <div class="satir-dugmeler" style="flex-direction:column;align-items:stretch;min-width:180px">
-          ${u.onay !== "onaylandi" ? `<button type="button" class="btn btn-kucuk btn-ana" data-urun-onayla="${u.id}">Onayla</button>` : ""}
-          ${u.onay !== "reddedildi" ? `<details><summary class="btn btn-kucuk">Reddet</summary><form class="form" data-urun-reddet="${u.id}" style="margin-top:8px">
-            <input name="neden" required maxlength="300" placeholder="Ret nedeni (petshop görür)"><button class="btn btn-kucuk" type="submit">Reddet</button></form></details>` : ""}
+          ${u.onay !== "onaylandi" ? `<button type="button" class="btn btn-kucuk btn-ana" data-urun-onayla="${u.id}">${u.onay === "reddedildi" ? "Tekrar yayına al" : "Onayla"}</button>` : ""}
+          ${u.onay !== "reddedildi" ? `<details><summary class="btn btn-kucuk${u.onay === "onaylandi" ? " btn-sil" : ""}">${u.onay === "onaylandi" ? "Yayından kaldır" : "Reddet"}</summary><form class="form" data-urun-reddet="${u.id}" data-kaldir="${u.onay === "onaylandi" ? 1 : ""}" style="margin-top:8px">
+            <input name="neden" required maxlength="300" placeholder="${u.onay === "onaylandi" ? "Kaldırma nedeni" : "Ret nedeni"}${u.satici_id ? " (petshop görür)" : ""}"><button class="btn btn-kucuk" type="submit">${u.onay === "onaylandi" ? "Kaldır" : "Reddet"}</button></form></details>` : ""}
           <a class="btn btn-kucuk" href="/yonetim/urun/${u.id}">Düzenle</a>
         </div>
+      </div>`).join("")}
       </div>`).join("") : `<p class="bilgi">Bu listede ürün yok.</p>`}
     </section>
     <form class="kutu form" id="kargo-form">
@@ -454,6 +471,7 @@ async function yUrunler() {
       <button class="btn" type="submit" style="align-self:flex-start">Kaydet</button>
     </form>
   </div>`);
+  $("#magaza-sec").onchange = e => git(yol(filtre, e.target.value));
   $$("[data-urun-onayla]").forEach(b => b.onclick = async () => {
     b.disabled = true;
     const { error: h } = await sb.from("urunler").update({ onay: "onaylandi", red_nedeni: null }).eq("id", b.dataset.urunOnayla);
@@ -464,7 +482,7 @@ async function yUrunler() {
     e.preventDefault();
     const { error: h } = await sb.from("urunler").update({ onay: "reddedildi", red_nedeni: new FormData(f).get("neden").trim() }).eq("id", f.dataset.urunReddet);
     if (h) return bildir(hataMetni(h));
-    bildir("Ürün reddedildi."); yUrunler();
+    bildir(f.dataset.kaldir ? "Ürün mağazadan kaldırıldı." : "Ürün reddedildi."); yUrunler();
   });
   $("#kargo-form").onsubmit = async e => {
     e.preventDefault(); const fd = new FormData(e.target);

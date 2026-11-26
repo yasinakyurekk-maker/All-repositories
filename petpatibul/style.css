@@ -378,3 +378,9 @@ details>summary.btn::-webkit-details-marker{display:none}
 .aciklama-kutu h2{font-size:22px;font-weight:800;margin:0}
 .aciklama-kutu .aciklama{font-size:16px}
 @media (max-width:640px){.aciklama-kutu{padding:16px}.aciklama-kutu h2{font-size:20px}}
+
+/* yönetim: ürünler mağaza mağaza */
+.urun-grup{border-top:1px solid var(--cizgi);padding-top:12px;margin-top:12px}
+.urun-grup:first-of-type{border-top:0;margin-top:0}
+.urun-grup-bas{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 12px;background:var(--zemin);border-radius:12px;margin-bottom:4px}
+.urun-grup-bas b a{color:var(--yazi)}

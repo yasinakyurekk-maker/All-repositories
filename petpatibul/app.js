@@ -4,7 +4,7 @@
 // ---------- sabitler ----------
 const TUR = { kedi: "Kedi", kopek: "Köpek", kus: "Kuş", diger: "Diğer" };
 const TUR_COGUL = { kedi: "kediler", kopek: "köpekler", kus: "kuşlar", diger: "dostlar" };
-const YAS = { yavru: "Yavru", genc: "Genç", yetiskin: "Yetişkin", yasli: "Yaşlı" };
+const YAS = { ay0_3: "0-3 aylık", ay3_6: "3-6 aylık", ay6_9: "6-9 aylık", ay9_12: "9-12 aylık", yas1: "1 yaş+" };
 const CINS = { disi: "Dişi", erkek: "Erkek", bilinmiyor: "Cinsiyeti bilinmiyor" };
 const KAT = { sahiplendirme: "Sahiplendirme", kayip: "Kayıp", bulunan: "Bulunan" };
 const ILAN_DURUM = { bekliyor: "Onay bekliyor", yayinda: "Yayında", reddedildi: "Reddedildi", sahiplendi: "Sahiplendi", kaldirildi: "Kaldırıldı" };
@@ -502,8 +502,8 @@ async function detaySayfasi(id) {
           </div>
         </div>
         <div class="kutu kunye">${kunye.map(([a, b]) => `<div><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join("")}</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <h2 style="font-size:24px;font-weight:800">${sahiplendirme ? esc(i.ad) + " hakkında" : "Açıklama"}</h2>
+        <div class="kutu aciklama-kutu">
+          <h2>${sahiplendirme ? esc(i.ad) + " hakkında" : "Açıklama"}</h2>
           <p class="aciklama">${esc(i.aciklama || "İlan sahibi açıklama eklememiş.")}</p>
         </div>
         ${!benim && S.kullanici ? `<p style="margin:0"><button type="button" class="link-btn tehlike" id="sikayet-ac">Bu ilanı şikayet et</button></p>

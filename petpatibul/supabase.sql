@@ -50,7 +50,7 @@ create table if not exists ilanlar (
   tur text not null check (tur in ('kedi','kopek','kus','diger')),
   ad text not null check (char_length(ad) between 1 and 60),
   irk text,
-  yas_grubu text check (yas_grubu in ('yavru','genc','yetiskin','yasli')),
+  yas_grubu text check (yas_grubu in ('ay0_3','ay3_6','ay6_9','ay9_12','yas1')),
   cinsiyet text not null default 'bilinmiyor' check (cinsiyet in ('disi','erkek','bilinmiyor')),
   il text not null,
   ilce text,
@@ -71,6 +71,11 @@ create table if not exists ilanlar (
   created_at timestamptz not null default now()
 );
 create index if not exists ilanlar_durum on ilanlar(durum, il, tur);
+-- Yaş grupları ay bazında (eski kurulumlar için dönüşüm).
+alter table ilanlar drop constraint if exists ilanlar_yas_grubu_check;
+update ilanlar set yas_grubu = case yas_grubu when 'yavru' then 'ay3_6' when 'genc' then 'ay9_12' when 'yetiskin' then 'yas1' when 'yasli' then 'yas1' else yas_grubu end
+  where yas_grubu in ('yavru','genc','yetiskin','yasli');
+alter table ilanlar add constraint ilanlar_yas_grubu_check check (yas_grubu in ('ay0_3','ay3_6','ay6_9','ay9_12','yas1'));
 -- Eski kurulumlar için: ilan sahibinin iletişim numarası (ilanda görünür, site aracılık yapmaz).
 alter table ilanlar add column if not exists telefon text check (telefon is null or char_length(telefon) between 10 and 20);
 alter table ilanlar add column if not exists whatsapp boolean not null default true;

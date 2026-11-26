@@ -372,3 +372,9 @@ details>summary.btn::-webkit-details-marker{display:none}
 .iletisim-tel:hover{color:var(--ana)}
 .btn-whatsapp{background:#25d366;color:#fff;border-color:#25d366;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn-whatsapp:hover{background:#1ebe5a;border-color:#1ebe5a;color:#fff}
+
+/* ilan açıklaması kutusu */
+.aciklama-kutu{display:flex;flex-direction:column;gap:10px;background:var(--ana-acik);border:1px solid var(--cizgi);border-left:4px solid var(--ana);padding:20px 22px}
+.aciklama-kutu h2{font-size:22px;font-weight:800;margin:0}
+.aciklama-kutu .aciklama{font-size:16px}
+@media (max-width:640px){.aciklama-kutu{padding:16px}.aciklama-kutu h2{font-size:20px}}

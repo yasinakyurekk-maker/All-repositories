@@ -69,13 +69,13 @@ function secenekler(obj, secili, bosEtiket) {
 }
 // İl seçilince ilçe listesi: aynı formdaki [name=ilce] alanı ilin ilçelerinden seçilen bir listeye dönüşür.
 function ilceSecenekleri(il, secili, bosEtiket = "Seç") {
-  const liste = (window.ILCELER && ILCELER[il]) || [];
+  const liste = (typeof ILCELER !== "undefined" && ILCELER[il]) || [];
   const ekstra = secili && !liste.includes(secili) ? [secili] : [];
   return `<option value="">${esc(il ? bosEtiket : "Önce il seç")}</option>` +
     [...ekstra, ...liste].map(x => `<option${x === secili ? " selected" : ""}>${esc(x)}</option>`).join("");
 }
 function ilceBagla(kok = document) {
-  if (!window.ILCELER) return;
+  if (typeof ILCELER === "undefined") return;
   $$("[name=ilce]:not([data-ilce-bagli])", kok).forEach(alan => {
     const form = alan.form || alan.closest("form, .form");
     const ilSec = form && $("select[name=il]", form);

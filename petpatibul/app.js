@@ -71,7 +71,8 @@ function ilSecenekleri(secili, bosEtiket) {
     ILLER.map(i => `<option${i === secili ? " selected" : ""}>${esc(i)}</option>`).join("");
 }
 function meta(baslik, aciklama) {
-  document.title = baslik ? `${baslik} | ${SITE}` : `${SITE} | Ücretsiz kedi ve köpek sahiplendirme ilanları`;
+  const genel = (typeof C !== "undefined" && C.genel) || {};
+  document.title = baslik ? `${baslik} | ${SITE}` : (genel.site_basligi || `${SITE} | Ücretsiz kedi ve köpek sahiplendirme ilanları`);
   const md = $('meta[name="description"]');
   if (aciklama && md) md.setAttribute("content", aciklama);
 }
@@ -147,7 +148,7 @@ let yonlendirmeNo = 0;
 async function yonlendir() {
   const no = ++yonlendirmeNo;
   const yol = location.pathname.replace(/\/+$/, "") || "/";
-  $$(".ana-menu > a").forEach(a => a.removeAttribute("aria-current"));
+  $$(".ana-menu > a, #menu-linkleri > a").forEach(a => a.removeAttribute("aria-current"));
   for (const [re, fn] of ROTALAR) {
     const m = yol.match(re);
     if (!m) continue;
@@ -193,75 +194,111 @@ function kart(i) {
 }
 const izgara = liste => `<div class="izgara">${liste.map(kart).join("")}</div>`;
 
-// ---------- ana sayfa ----------
+// ---------- ana sayfa (içerik yönetim panelinden düzenlenir: icerik.js) ----------
+function bannerHtml() {
+  const B = C.bannerlar;
+  const l = (B.liste || []).filter(x => x.aktif !== false && gorselUrl(x.gorsel));
+  if (B.aktif === false || !l.length) return "";
+  const kare = (x, n) => {
+    const yazi = x.baslik || x.metin || x.buton;
+    const ic = `<img src="${esc(gorselUrl(x.gorsel))}" alt="${esc(x.baslik || "")}"${n ? ' loading="lazy"' : ""}>
+      ${yazi ? `<div class="slayt-yazi">${x.baslik ? `<h2>${esc(x.baslik)}</h2>` : ""}${x.metin ? `<p>${satirlar(x.metin)}</p>` : ""}${x.buton ? `<span class="btn btn-ana">${esc(x.buton)}</span>` : ""}</div>` : ""}`;
+    const h = guvenliLink(x.link);
+    return h ? `<a class="slayt-kare${yazi ? " yazili" : ""}" href="${esc(h)}"${disLink(h) ? ' target="_blank" rel="noopener"' : ""}>${ic}</a>` : `<div class="slayt-kare${yazi ? " yazili" : ""}">${ic}</div>`;
+  };
+  return `<section class="kap bolum" style="padding-bottom:0"><div class="slayt" id="slayt" aria-roledescription="carousel" aria-label="Kampanyalar">
+    <div class="slayt-iz">${l.map(kare).join("")}</div>
+    ${l.length > 1 ? `<button type="button" class="slayt-ok sol" data-slayt="-1" aria-label="Önceki">‹</button><button type="button" class="slayt-ok sag" data-slayt="1" aria-label="Sonraki">›</button>
+    <div class="slayt-nokta">${l.map((_, n) => `<button type="button" data-slayt-git="${n}" aria-label="${n + 1}. banner"${n === 0 ? ' aria-current="true"' : ""}></button>`).join("")}</div>` : ""}
+  </div></section>`;
+}
+function slaytBaslat() {
+  const k = $("#slayt"); if (!k) return;
+  const iz = $(".slayt-iz", k), adet = iz.children.length; if (adet < 2) return;
+  let n = 0, t;
+  const goster = i => {
+    n = (i + adet) % adet; iz.style.transform = `translateX(-${n * 100}%)`;
+    $$("[data-slayt-git]", k).forEach(b => b.setAttribute("aria-current", String(+b.dataset.slaytGit === n)));
+  };
+  const zamanla = () => { clearInterval(t); t = setInterval(() => { if (!document.body.contains(k)) return clearInterval(t); goster(n + 1); }, Math.max(2, Number(C.bannerlar.sure) || 6) * 1000); };
+  $$("[data-slayt]", k).forEach(b => b.onclick = () => { goster(n + Number(b.dataset.slayt)); zamanla(); });
+  $$("[data-slayt-git]", k).forEach(b => b.onclick = () => { goster(+b.dataset.slaytGit); zamanla(); });
+  let x0 = null;
+  k.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  k.addEventListener("touchend", e => { if (x0 === null) return; const d = e.changedTouches[0].clientX - x0; if (Math.abs(d) > 40) { goster(n + (d < 0 ? 1 : -1)); zamanla(); } x0 = null; });
+  zamanla();
+}
+function bantHtml(b) {
+  const renk = ["mavi", "turuncu", "yesil", "sari"].includes(b.renk) ? b.renk : "mavi";
+  const dugme = [[b.buton1_yazi, b.buton1_link, renk === "turuncu" ? "btn btn-turuncu" : "btn"], [b.buton2_yazi, b.buton2_link, "btn"]]
+    .filter(([y]) => y).map(([y, l, c]) => aEtiket(l, esc(y), c)).join("");
+  const g = gorselUrl(b.gorsel);
+  return `<section class="kap bolum"><div class="bant bant-${renk}">
+    <div>${b.ust_yazi ? `<span class="ust-yazi">${esc(b.ust_yazi)}</span>` : ""}${b.baslik ? `<h2>${esc(b.baslik)}</h2>` : ""}${b.metin ? `<p>${satirlar(b.metin)}</p>` : ""}</div>
+    ${g ? `<div class="bant-gorsel"><img src="${esc(g)}" alt="" loading="lazy"></div>` : ""}
+    ${dugme ? `<div class="dugmeler">${dugme}</div>` : ""}
+  </div></section>`;
+}
 async function anaSayfa() {
-  meta("", "Türkiye'nin ücretsiz evcil hayvan sahiplendirme platformu. İline göre kedi, köpek ve kuş sahiplendirme ilanlarını incele, kayıp hayvan ilanı ver.");
+  meta("", C.genel.site_aciklama);
+  const K = C.kahraman, KT = C.kategoriler, IL = C.ilanlar, AD = C.adimlar, G = C.guven;
+  const gorseller = [K.gorsel1, K.gorsel2, K.gorsel3, K.gorsel4].map(gorselUrl);
   sayfa(`
   <section class="kahraman"><div class="kap kahraman-in">
     <div class="kahraman-yazi">
-      <span class="rozet">Hayvan satışı yok, yalnızca ücretsiz sahiplendirme</span>
-      <h1>Bir dost sahiplen,<br>bir hayat değiştir.</h1>
-      <p>Yuva arayan kedi, köpek ve diğer dostlarımızı bulunduğun ile göre keşfet. Tüm ilanlar yayına girmeden önce kontrol edilir.</p>
-      <form class="arama" id="arama">
+      ${K.rozet ? `<span class="rozet">${esc(K.rozet)}</span>` : ""}
+      ${K.baslik ? `<h1>${satirlar(K.baslik)}</h1>` : ""}
+      ${K.aciklama ? `<p>${satirlar(K.aciklama)}</p>` : ""}
+      ${K.arama_goster !== false ? `<form class="arama" id="arama">
         <label><span>Ne arıyorsun?</span><select name="tur">${secenekler(TUR, "", "Tümü")}</select></label>
         <label><span>Hangi il?</span><select name="il">${ilSecenekleri("", "Tüm Türkiye")}</select></label>
         <button class="btn btn-ana" type="submit">${ikon.ara} Ara</button>
-      </form>
+      </form>` : ""}
     </div>
-    <div class="kahraman-gorsel" aria-hidden="true"><div></div><div></div><div></div><div></div></div>
+    <div class="kahraman-gorsel" aria-hidden="true">${gorseller.map(u => `<div>${u ? `<img src="${esc(u)}" alt="">` : ""}</div>`).join("")}</div>
   </div></section>
 
-  <section class="kap bolum">
-    <div class="bolum-bas"><h2>Kimi arıyorsun?</h2></div>
+  ${bannerHtml()}
+
+  ${KT.goster !== false && (KT.liste || []).length ? `<section class="kap bolum">
+    ${KT.baslik ? `<div class="bolum-bas"><h2>${esc(KT.baslik)}</h2></div>` : ""}
     <div class="kategoriler">
-      ${[["kedi", "Kedi sahiplen", "Yavru ve yetişkin kediler"], ["kopek", "Köpek sahiplen", "Her boyda köpek dostlar"], ["kus", "Kuş sahiplen", "Muhabbet kuşu, kanarya ve diğerleri"], ["diger", "Diğer dostlar", "Tavşan, hamster, kaplumbağa"]]
-        .map(([t, a, d]) => `<a class="kategori" href="/${t}-sahiplendirme"><span class="ikon">${ikon.pati}</span><b>${a}</b><span>${d}</span></a>`).join("")}
-      <a class="kategori" href="/kayip-ilanlari"><span class="ikon">${ikon.ara}</span><b>Kayıp ve bulunan</b><span>Kaybolan dostlar için ilanlar</span></a>
+      ${KT.liste.filter(x => x.baslik).map(x => {
+        const g = gorselUrl(x.gorsel);
+        const ic = `${g ? `<img class="kategori-foto" src="${esc(g)}" alt="" loading="lazy">` : `<span class="ikon">${/kayip|bulunan/.test(x.link || "") ? ikon.ara : ikon.pati}</span>`}<b>${esc(x.baslik)}</b>${x.metin ? `<span>${esc(x.metin)}</span>` : ""}`;
+        return aEtiket(x.link, ic, "kategori");
+      }).join("")}
     </div>
-  </section>
+  </section>` : ""}
 
   <section class="kap bolum" id="vitrin-bolum" hidden>
-    <div class="bolum-bas"><div><h2>Öne çıkan ilanlar</h2><p>Bu ilanlar sahipleri tarafından öne çıkarıldı.</p></div></div>
+    <div class="bolum-bas"><div><h2>${esc(IL.vitrin_baslik)}</h2>${IL.vitrin_aciklama ? `<p>${esc(IL.vitrin_aciklama)}</p>` : ""}</div></div>
     <div id="vitrin"></div>
   </section>
 
-  <section class="kap bolum">
-    <div class="bolum-bas"><div><h2>Yuvasını bekleyenler</h2><p>En uzun süredir bekleyenler önce gösterilir, böylece her dost görünür olur.</p></div><a href="/sahiplendirme">Tüm ilanları gör</a></div>
+  ${IL.bekleyen_goster !== false ? `<section class="kap bolum">
+    <div class="bolum-bas"><div><h2>${esc(IL.bekleyen_baslik)}</h2>${IL.bekleyen_aciklama ? `<p>${esc(IL.bekleyen_aciklama)}</p>` : ""}</div>${IL.bekleyen_link_yazi ? aEtiket(IL.bekleyen_link, esc(IL.bekleyen_link_yazi)) : ""}</div>
     <div id="bekleyenler"><p class="bilgi">Yükleniyor…</p></div>
-  </section>
+  </section>` : ""}
 
-  <section class="kap bolum">
-    <div class="bolum-bas"><h2>Sahiplenme nasıl işler?</h2></div>
+  ${AD.goster !== false && (AD.liste || []).length ? `<section class="kap bolum">
+    ${AD.baslik ? `<div class="bolum-bas"><h2>${esc(AD.baslik)}</h2></div>` : ""}
     <div class="adimlar">
-      <div class="adim"><span class="no">1</span><b>Keşfet</b><span>Türe, ile, yaşa ve karaktere göre filtreleyerek sana uygun dostu bul.</span></div>
-      <div class="adim"><span class="no">2</span><b>Başvur</b><span>Kısa bir form doldur. Evin ve yaşam düzenin hakkında birkaç soru sorarız.</span></div>
-      <div class="adim"><span class="no">3</span><b>Tanış</b><span>İlan sahibi başvurunu inceler ve seninle iletişime geçer. Önce tanışın.</span></div>
-      <div class="adim"><span class="no">4</span><b>Yuvaya kavuş</b><span>Sahiplendikten sonra bakım rehberlerimizle yanındayız.</span></div>
+      ${AD.liste.map((x, n) => `<div class="adim"><span class="no">${n + 1}</span><b>${esc(x.baslik)}</b><span>${esc(x.metin)}</span></div>`).join("")}
     </div>
-  </section>
+  </section>` : ""}
 
-  <section class="kap bolum"><div>
-    <div class="bant bant-magaza">
-      <div><span class="ust-yazi">MAĞAZA</span><h2>Mama ve ekipman</h2><p>Yeni dostun için mama, kum, tasma, taşıma çantası ve oyuncak. Belirli tutar üstüne kargo bedava.</p></div>
-      <div class="dugmeler"><a class="btn" href="/magaza">Mağazaya git</a></div>
-    </div>
-  </div></section>
+  ${(C.bantlar.liste || []).filter(b => b.aktif !== false).map(bantHtml).join("")}
 
-  <section class="kap bolum"><div class="bant bant-kayip">
-    <div><span class="ust-yazi">KAYIP VE BULUNAN</span><h2>Dostunu mu kaybettin, sahipsiz birini mi buldun?</h2><p>Fotoğraf ve son görüldüğü yerle ücretsiz ilan ver.</p></div>
-    <div class="dugmeler"><a class="btn btn-turuncu" href="/ilan-ver?kategori=kayip">Kayıp ilanı ver</a><a class="btn" href="/ilan-ver?kategori=bulunan">Bulduğum hayvanı bildir</a></div>
-  </div></section>
-
-  <section class="kap bolum">
-    <div class="bolum-bas"><h2>Neden güvenli?</h2></div>
+  ${G.goster !== false && (G.liste || []).length ? `<section class="kap bolum">
+    ${G.baslik ? `<div class="bolum-bas"><h2>${esc(G.baslik)}</h2></div>` : ""}
     <div class="guven">
-      <div><span class="tik">${ikon.tik}</span><p style="margin:0"><b>Her ilan kontrol edilir</b><span>İlanlar ekibimiz onaylamadan yayına girmez.</span></p></div>
-      <div><span class="tik">${ikon.tik}</span><p style="margin:0"><b>Telefonun gizli kalır</b><span>İletişim bilgin yalnızca başvurduğun ilanın sahibine iletilir.</span></p></div>
-      <div><span class="tik">${ikon.tik}</span><p style="margin:0"><b>Satış ve ücret yok</b><span>Para istenen ilanlar kaldırılır. Tek tıkla şikayet edebilirsin.</span></p></div>
+      ${G.liste.map(x => `<div><span class="tik">${ikon.tik}</span><p style="margin:0"><b>${esc(x.baslik)}</b><span>${esc(x.metin)}</span></p></div>`).join("")}
     </div>
-  </section>`);
+  </section>` : ""}`);
 
-  $("#arama").onsubmit = e => {
+  slaytBaslat();
+  if ($("#arama")) $("#arama").onsubmit = e => {
     e.preventDefault(); const f = new FormData(e.target);
     git(listeYolu({ tur: f.get("tur"), il: f.get("il") }));
   };
@@ -272,14 +309,14 @@ async function anaSayfa() {
   ]);
   if (v.data && v.data.length) { $("#vitrin-bolum").hidden = false; $("#vitrin").innerHTML = izgara(v.data); }
   if (b.error) throw b.error;
-  $("#bekleyenler").innerHTML = b.data.length ? izgara(b.data) : `<div class="kutu bos-durum"><h2>Henüz ilan yok</h2><p>İlk ilanı sen ver.</p><p><a class="btn btn-ana" href="/ilan-ver">Ücretsiz ilan ver</a></p></div>`;
+  if ($("#bekleyenler")) $("#bekleyenler").innerHTML = b.data.length ? izgara(b.data) : `<div class="kutu bos-durum"><h2>Henüz ilan yok</h2><p>İlk ilanı sen ver.</p><p><a class="btn btn-ana" href="/ilan-ver">Ücretsiz ilan ver</a></p></div>`;
 }
 
 // ---------- ilan listesi ----------
 async function listeSayfasi({ kategori, tur, ilSlug }) {
   const il = ilSlug ? ilBul(ilSlug) : "";
   if (ilSlug && !il) { meta("Sayfa bulunamadı"); sayfa(`<div class="kap bos-durum"><h1>Böyle bir il bulamadık</h1><p><a href="${listeYolu({ kategori, tur })}">Tüm Türkiye'deki ilanlara bak</a></p></div>`); return; }
-  $$(".ana-menu > a").forEach(a => { if ((kategori === "sahiplendirme" && a.getAttribute("href") === "/sahiplendirme") || (kategori !== "sahiplendirme" && a.getAttribute("href") === "/kayip-ilanlari")) a.setAttribute("aria-current", "page"); });
+  $$("#menu-linkleri > a").forEach(a => { if ((kategori === "sahiplendirme" && a.getAttribute("href") === "/sahiplendirme") || (kategori !== "sahiplendirme" && a.getAttribute("href") === "/kayip-ilanlari")) a.setAttribute("aria-current", "page"); });
   const q = new URLSearchParams(location.search);
   const f = { yas: q.get("yas") || "", cinsiyet: q.get("cinsiyet") || "", sira: q.get("sira") || "bekleyen", sayfa: Math.max(1, parseInt(q.get("sayfa") || "1", 10) || 1) };
   const secOz = Object.keys(OZELLIK).filter(k => q.get(k) === "1");
@@ -860,24 +897,11 @@ async function odemeSonucSayfasi(sonuc) {
 
 // Yönetim paneli yonetim.js içindedir.
 
-// ---------- bilgi sayfaları ----------
+// ---------- bilgi sayfaları (Yönetim > Site içeriği > Sayfalar bölümünden düzenlenir) ----------
 function metinSayfasi(ad) {
-  const M = {
-    hakkimizda: ["Hakkımızda", `<p>petpatibul.com, sahipsiz ve yuva arayan hayvanları onları sevecek ailelerle buluşturmak için kurulmuş ücretsiz bir sahiplendirme platformudur.</p>
-      <p>Sitemizde hayvan satışına izin verilmez. İlan vermek ve başvuru yapmak ücretsizdir. İlan sahipleri isterlerse ilanlarını ücretli olarak öne çıkarabilir; bu gelir sitenin işletilmesi için kullanılır.</p>`],
-    sss: ["Sıkça sorulan sorular", `<h2>Sahiplenme nasıl işler?</h2><p>Beğendiğin ilanda başvuru formunu doldurursun. Başvurun yalnızca ilan sahibine iletilir. İlan sahibi seni telefonla arar, tanışırsınız ve sahiplendirmeye birlikte karar verirsiniz.</p>
-      <h2>Sahiplenmek ücretli mi?</h2><p>Hayır. Sitemizdeki tüm sahiplendirmeler ücretsizdir. Senden para isteyen bir ilan görürsen lütfen şikayet et.</p>
-      <h2>İlan vermek ücretli mi?</h2><p>Hayır, ilan vermek ücretsizdir. İlanını daha çok kişiye göstermek istersen ücretli öne çıkarma paketlerinden birini seçebilirsin.</p>
-      <h2>Öne çıkarma nedir?</h2><p>Öne çıkarılan ilanlar seçilen süre boyunca ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir. Ödemeden sonra ekibimiz ilanı kontrol edip onaylar; süre onay anından başlar. Uygun bulunmayan ilanların ücreti iade edilir.</p>
-      <h2>İlanım neden hemen yayına girmedi?</h2><p>Sahte ve satış ilanlarını engellemek için her ilan ekibimiz tarafından kontrol edilir. Bu genellikle kısa sürer.</p>
-      <h2>Kayıp hayvanımı nasıl ilan ederim?</h2><p>"Ücretsiz ilan ver" sayfasında "Kaybettim" seçeneğini seç, fotoğraf ve kaybolduğu yeri ekle.</p>
-      <h2>Mağazadan aldığım ürün ne zaman gelir?</h2><p>Siparişler genellikle 1-3 iş günü içinde kargoya verilir. Kargo takip numarasını Hesabım sayfasında görebilirsin.</p>`],
-    kvkk: ["KVKK aydınlatma metni", `<p class="uyari">[Bu sayfaya bir hukukçu tarafından hazırlanmış KVKK aydınlatma metni eklenecek: hangi kişisel verilerin (e-posta, telefon, ad soyad, başvuru bilgileri) hangi amaçla işlendiği, kimlerle paylaşıldığı ve kullanıcının hakları.]</p>`],
-    "kullanim-kosullari": ["Kullanım koşulları", `<p class="uyari">[Bu sayfaya kullanım koşulları ve öne çıkarma paketleri için mesafeli satış sözleşmesi eklenecek. Temel kurallar: hayvan satışı ve ücret talebi yasaktır, ilanlar onaydan geçer, kurallara uymayan ilanlar kaldırılır.]</p>`],
-  };
-  const [baslik, govde] = M[ad];
-  meta(baslik);
-  sayfa(`<div class="kap dar metin"><h1 style="font-size:36px;font-weight:900;margin-bottom:16px">${baslik}</h1>${govde}</div>`);
+  const p = C.sayfalar[ad] || {};
+  meta(p.baslik || "");
+  sayfa(`<div class="kap dar metin"><h1 style="font-size:36px;font-weight:900;margin-bottom:16px">${esc(p.baslik || "")}</h1>${metinHtml(p.metin)}</div>`);
 }
 
 // ---------- başlat ----------
@@ -885,5 +909,7 @@ sb.auth.onAuthStateChange((olay) => {
   if (olay === "PASSWORD_RECOVERY") git("/giris#type=recovery", true);
 });
 // Mağaza ve bağış adresleri magaza.js ile eklenir; sayfa tamamen yüklenince başla.
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => oturumYukle().then(yonlendir));
-else setTimeout(() => oturumYukle().then(yonlendir), 0);
+// Site içeriği (icerik.js) ve oturum birlikte yüklenir.
+const baslat = () => Promise.all([oturumYukle(), window.icerikYukle ? icerikYukle() : null]).then(yonlendir);
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", baslat);
+else setTimeout(baslat, 0);

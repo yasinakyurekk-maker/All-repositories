@@ -483,5 +483,21 @@ create policy mf_yukle on storage.objects for insert to authenticated with check
 drop policy if exists mf_sil on storage.objects;
 create policy mf_sil on storage.objects for delete to authenticated using (bucket_id = 'magaza-fotolari' and is_admin());
 
+-- ---------- SİTE İÇERİĞİ (bannerlar, görseller, metinler, menüler, iletişim) ----------
+-- Yönetim > Site içeriği sayfasından düzenlenir. Her bölüm ayrı satırdır; herkes okur, yalnızca yönetici yazar.
+-- Görseller magaza-fotolari deposunun site/ klasörüne yüklenir (yalnızca yönetici yükleyebilir).
+create table if not exists site_icerik (
+  anahtar text primary key check (char_length(anahtar) between 1 and 40),
+  deger jsonb not null default '{}'::jsonb,
+  guncellendi timestamptz not null default now()
+);
+alter table site_icerik enable row level security;
+drop policy if exists si_oku on site_icerik;
+create policy si_oku on site_icerik for select to anon, authenticated using (true);
+drop policy if exists si_yaz on site_icerik;
+create policy si_yaz on site_icerik for all to authenticated using (is_admin()) with check (is_admin());
+grant select on site_icerik to anon, authenticated;
+grant insert, update, delete on site_icerik to authenticated;
+
 -- >>> Kendi e-postanızı yazın <<<
 insert into yoneticiler(email) values (lower('petpatibul@gmail.com')) on conflict do nothing;

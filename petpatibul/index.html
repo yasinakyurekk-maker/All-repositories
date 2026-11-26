@@ -27,16 +27,14 @@
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
     <nav class="ana-menu" id="ana-menu" aria-label="Ana menü">
-      <a href="/sahiplendirme">Sahiplen</a>
-      <a href="/kayip-ilanlari">Kayıp ve bulunan</a>
-      <a href="/magaza">Mağaza</a>
+      <span id="menu-linkleri" class="menu-linkleri"><a href="/sahiplendirme">Sahiplen</a><a href="/kayip-ilanlari">Kayıp ve bulunan</a><a href="/magaza">Mağaza</a></span>
       <span class="menu-bosluk"></span>
       <span id="oturum-alani"><a href="/giris">Giriş yap</a></span>
       <a href="/sepet" class="sepet-link" aria-label="Sepet">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
         <span class="menu-sepet-yazi">Sepet</span><span id="sepet-sayi" class="sepet-sayi" hidden></span>
       </a>
-      <a href="/ilan-ver" class="btn btn-ana">Ücretsiz ilan ver</a>
+      <a href="/ilan-ver" class="btn btn-ana" id="menu-cta">Ücretsiz ilan ver</a>
     </nav>
   </div>
 </header>
@@ -49,9 +47,11 @@
   <div class="kap alt-in">
     <div class="alt-marka">
       <span class="logo-yazi">petpatibul</span>
-      <p>Türkiye'nin ücretsiz evcil hayvan sahiplendirme platformu. Hayvan satışına izin verilmez.</p>
+      <p id="alt-aciklama">Türkiye'nin ücretsiz evcil hayvan sahiplendirme platformu. Hayvan satışına izin verilmez.</p>
+      <div id="alt-iletisim" class="alt-iletisim" hidden></div>
+      <p id="alt-telif" class="alt-telif" hidden></p>
     </div>
-    <nav aria-label="Alt menü" class="alt-menu">
+    <nav aria-label="Alt menü" class="alt-menu" id="alt-menu">
       <a href="/kedi-sahiplendirme">Kedi sahiplendirme</a>
       <a href="/kopek-sahiplendirme">Köpek sahiplendirme</a>
       <a href="/kus-sahiplendirme">Kuş sahiplendirme</a>
@@ -70,7 +70,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/config.js"></script>
 <script src="/app.js"></script>
+<script src="/icerik.js"></script>
 <script src="/magaza.js"></script>
 <script src="/yonetim.js"></script>
+<script src="/site-yonetim.js"></script>
 </body>
 </html>

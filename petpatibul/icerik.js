@@ -46,8 +46,8 @@ const VARSAYILAN_ICERIK = {
     baslik: "Sahiplenme nasıl işler?",
     liste: [
       { baslik: "Keşfet", metin: "Türe, ile, yaşa ve karaktere göre filtreleyerek sana uygun dostu bul." },
-      { baslik: "Başvur", metin: "Kısa bir form doldur. Evin ve yaşam düzenin hakkında birkaç soru sorarız." },
-      { baslik: "Tanış", metin: "İlan sahibi başvurunu inceler ve seninle iletişime geçer. Önce tanışın." },
+      { baslik: "Ulaş", metin: "İlan sahibini ara ya da WhatsApp'tan yaz. Numarası ilan sayfasında." },
+      { baslik: "Tanış", metin: "İlan sahibiyle konuşun, karar vermeden önce mutlaka tanışın." },
       { baslik: "Yuvaya kavuş", metin: "Sahiplendikten sonra bakım rehberlerimizle yanındayız." },
     ],
   },
@@ -64,7 +64,7 @@ const VARSAYILAN_ICERIK = {
     baslik: "Neden güvenli?",
     liste: [
       { baslik: "Her ilan kontrol edilir", metin: "İlanlar ekibimiz onaylamadan yayına girmez." },
-      { baslik: "Telefonun gizli kalır", metin: "İletişim bilgin yalnızca başvurduğun ilanın sahibine iletilir." },
+      { baslik: "Aracı yok", metin: "İlan sahibiyle doğrudan konuşursun. Görüşmeye kimse karışmaz, kimse komisyon almaz." },
       { baslik: "Satış ve ücret yok", metin: "Para istenen ilanlar kaldırılır. Tek tıkla şikayet edebilirsin." },
     ],
   },
@@ -94,9 +94,9 @@ const VARSAYILAN_ICERIK = {
   },
   iletisim: { telefon: "", eposta: "", whatsapp: "", adres: "", instagram: "", facebook: "", x: "", youtube: "", tiktok: "" },
   sayfalar: {
-    hakkimizda: { baslik: "Hakkımızda", metin: "petpatibul.com, sahipsiz ve yuva arayan hayvanları onları sevecek ailelerle buluşturmak için kurulmuş ücretsiz bir sahiplendirme platformudur.\n\nSitemizde hayvan satışına izin verilmez. İlan vermek ve başvuru yapmak ücretsizdir. İlan sahipleri isterlerse ilanlarını ücretli olarak öne çıkarabilir; bu gelir sitenin işletilmesi için kullanılır." },
-    sss: { baslik: "Sıkça sorulan sorular", metin: "## Sahiplenme nasıl işler?\nBeğendiğin ilanda başvuru formunu doldurursun. Başvurun yalnızca ilan sahibine iletilir. İlan sahibi seni telefonla arar, tanışırsınız ve sahiplendirmeye birlikte karar verirsiniz.\n\n## Sahiplenmek ücretli mi?\nHayır. Sitemizdeki tüm sahiplendirmeler ücretsizdir. Senden para isteyen bir ilan görürsen lütfen şikayet et.\n\n## İlan vermek ücretli mi?\nHayır, ilan vermek ücretsizdir. İlanını daha çok kişiye göstermek istersen ücretli öne çıkarma paketlerinden birini seçebilirsin.\n\n## Öne çıkarma nedir?\nÖne çıkarılan ilanlar seçilen süre boyunca ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir. Ödemeden sonra ekibimiz ilanı kontrol edip onaylar; süre onay anından başlar. Uygun bulunmayan ilanların ücreti iade edilir.\n\n## İlanım neden hemen yayına girmedi?\nSahte ve satış ilanlarını engellemek için her ilan ekibimiz tarafından kontrol edilir. Bu genellikle kısa sürer.\n\n## Kayıp hayvanımı nasıl ilan ederim?\n\"Ücretsiz ilan ver\" sayfasında \"Kaybettim\" seçeneğini seç, fotoğraf ve kaybolduğu yeri ekle.\n\n## Mağazadan aldığım ürün ne zaman gelir?\nSiparişler genellikle 1-3 iş günü içinde kargoya verilir. Kargo takip numarasını Hesabım sayfasında görebilirsin." },
-    kvkk: { baslik: "KVKK aydınlatma metni", metin: "[Bu sayfaya bir hukukçu tarafından hazırlanmış KVKK aydınlatma metni eklenecek: hangi kişisel verilerin (e-posta, telefon, ad soyad, başvuru bilgileri) hangi amaçla işlendiği, kimlerle paylaşıldığı ve kullanıcının hakları.]" },
+    hakkimizda: { baslik: "Hakkımızda", metin: "petpatibul.com, sahipsiz ve yuva arayan hayvanları onları sevecek ailelerle buluşturmak için kurulmuş ücretsiz bir sahiplendirme platformudur.\n\nSitemizde hayvan satışına izin verilmez. İlan vermek ve ilan sahiplerine ulaşmak ücretsizdir. İlan sahipleri isterlerse ilanlarını ücretli olarak öne çıkarabilir; bu gelir sitenin işletilmesi için kullanılır." },
+    sss: { baslik: "Sıkça sorulan sorular", metin: "## Sahiplenme nasıl işler?\nBeğendiğin ilanda ilan sahibinin telefon numarası yazar. Onu arar ya da WhatsApp'tan yazarsın, tanışırsınız ve sahiplendirmeye birlikte karar verirsiniz. Site görüşmeye aracılık yapmaz.\n\n## Sahiplenmek ücretli mi?\nHayır. Sitemizdeki tüm sahiplendirmeler ücretsizdir. Senden para isteyen bir ilan görürsen lütfen şikayet et.\n\n## İlan vermek ücretli mi?\nHayır, ilan vermek ücretsizdir. İlanını daha çok kişiye göstermek istersen ücretli öne çıkarma paketlerinden birini seçebilirsin.\n\n## Öne çıkarma nedir?\nÖne çıkarılan ilanlar seçilen süre boyunca ana sayfadaki vitrinde ve tüm listelerin en üstünde gösterilir. Ödemeden sonra ekibimiz ilanı kontrol edip onaylar; süre onay anından başlar. Uygun bulunmayan ilanların ücreti iade edilir.\n\n## İlanım neden hemen yayına girmedi?\nSahte ve satış ilanlarını engellemek için her ilan ekibimiz tarafından kontrol edilir. Bu genellikle kısa sürer.\n\n## Kayıp hayvanımı nasıl ilan ederim?\n\"Ücretsiz ilan ver\" sayfasında \"Kaybettim\" seçeneğini seç, fotoğraf ve kaybolduğu yeri ekle.\n\n## Mağazadan aldığım ürün ne zaman gelir?\nSiparişler genellikle 1-3 iş günü içinde kargoya verilir. Kargo takip numarasını Hesabım sayfasında görebilirsin." },
+    kvkk: { baslik: "KVKK aydınlatma metni", metin: "[Bu sayfaya bir hukukçu tarafından hazırlanmış KVKK aydınlatma metni eklenecek: hangi kişisel verilerin (e-posta, telefon, ad soyad, ilanlarda yayınlanan iletişim numarası) hangi amaçla işlendiği, kimlerle paylaşıldığı ve kullanıcının hakları.]" },
     "kullanim-kosullari": { baslik: "Kullanım koşulları", metin: "[Bu sayfaya kullanım koşulları ve öne çıkarma paketleri için mesafeli satış sözleşmesi eklenecek. Temel kurallar: hayvan satışı ve ücret talebi yasaktır, ilanlar onaydan geçer, kurallara uymayan ilanlar kaldırılır.]" },
   },
 };

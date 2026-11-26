@@ -56,7 +56,7 @@ function hataMetni(e) {
   if (/already registered/i.test(m)) return "Bu e-posta zaten kayıtlı. Giriş yapmayı deneyin.";
   if (/Email not confirmed/i.test(m)) return "E-postanıza gelen onay bağlantısına tıklayın, sonra giriş yapın.";
   if (/Password should be/i.test(m)) return "Şifre en az 6 karakter olmalı.";
-  if (/basvurular_tekil|duplicate key/i.test(m)) return "Bu ilana zaten başvurdunuz.";
+  if (/basvurular_tekil/i.test(m)) return "Bu ilana zaten başvurdunuz.";
   if (/row-level security|permission|yetkiniz yok/i.test(m)) return "Bu işlem için yetkiniz yok. Hesabın kısıtlandıysa bizimle iletişime geç.";
   if (/arasında olmalı|onay beklemiyor/i.test(m)) return m.replace(/^.*?: /, "") + ".";
   if (/rate limit|over_email_send|429/i.test(m + " " + (e && (e.code || e.status)))) return "Kısa sürede çok fazla e-posta istendi. Lütfen bir saat sonra tekrar deneyin.";
@@ -330,7 +330,7 @@ async function listeSayfasi({ kategori, tur, ilSlug }) {
   let baslik, aciklama;
   if (kategori === "sahiplendirme") {
     baslik = tur ? `${il ? il + " " : ""}${TUR[tur].toLocaleLowerCase("tr")} sahiplendirme ilanları` : `${il ? il + " " : ""}ücretsiz hayvan sahiplendirme ilanları`;
-    aciklama = `${yer} genelinde ücretsiz ${tur ? TUR[tur].toLocaleLowerCase("tr") : "kedi ve köpek"} sahiplendirme ilanları. Yaş, cinsiyet ve sağlık durumuna göre filtrele, hemen başvur.`;
+    aciklama = `${yer} genelinde ücretsiz ${tur ? TUR[tur].toLocaleLowerCase("tr") : "kedi ve köpek"} sahiplendirme ilanları. Yaş, cinsiyet ve sağlık durumuna göre filtrele, ilan sahibine doğrudan ulaş.`;
   } else {
     baslik = `${il ? il + " " : ""}${kategori === "kayip" ? "kayıp hayvan" : "bulunan hayvan"} ilanları`;
     aciklama = `${yer} genelinde ${kategori === "kayip" ? "kayıp" : "bulunan"} kedi ve köpek ilanları. Bilgin varsa ilan sahibine ulaş.`;
@@ -517,6 +517,20 @@ async function detaySayfasi(id) {
   if (benzer && benzer.length) { $("#benzer-bolum").hidden = false; $("#benzer").innerHTML = izgara(benzer); }
 }
 
+// Türkiye numarasını WhatsApp biçimine çevirir (905xxxxxxxxx). Geçersizse boş döner.
+function waNumara(t) {
+  let d = String(t || "").replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 11 && d.startsWith("0")) d = "90" + d.slice(1);
+  else if (d.length === 10 && d.startsWith("5")) d = "90" + d;
+  return d.length >= 11 && d.length <= 15 ? d : "";
+}
+function telBicim(t) {
+  const d = String(t || "").replace(/\D/g, "");
+  const y = d.length === 12 && d.startsWith("90") ? "0" + d.slice(2) : d.length === 10 ? "0" + d : d;
+  return y.length === 11 ? `${y.slice(0, 4)} ${y.slice(4, 7)} ${y.slice(7, 9)} ${y.slice(9)}` : String(t || "");
+}
+
 async function basvuruAlani(i, benim, yayinda) {
   const k = $("#basvuru-alani");
   const sahiplendirme = i.kategori === "sahiplendirme";
@@ -524,8 +538,9 @@ async function basvuruAlani(i, benim, yayinda) {
     const vitrin = oneCikan(i);
     k.innerHTML = `<div class="kutu form">
       <h2 style="font-size:22px">Bu senin ilanın</h2>
-      <p class="bilgi">Gelen başvuruları Hesabım sayfasından görebilirsin.</p>
-      <a class="btn btn-ana" href="/hesabim">Başvuruları gör</a>
+      ${i.telefon ? `<p class="bilgi">İlgilenenler seni <b>${esc(telBicim(i.telefon))}</b> numarasından ${i.whatsapp ? "arayabilir ya da WhatsApp'tan yazabilir" : "arayabilir"}.</p>`
+        : `<p class="uyari">İlanında iletişim numarası yok. Numara ekle ki ilgilenenler sana ulaşabilsin.</p>`}
+      ${["sahiplendi", "kaldirildi"].includes(i.durum) ? "" : `<a class="btn" href="/ilan-duzenle/${i.id}">${i.telefon ? "İlanı düzenle" : "Numara ekle"}</a>`}
       ${["bekliyor", "yayinda"].includes(i.durum) ? (vitrin
         ? `<p class="bilgi">Öne çıkarma ${tarih(i.one_cikan_bitis)} tarihine kadar sürüyor.</p><a class="btn btn-vitrin" href="/one-cikar/${i.id}">Süreyi uzat</a>`
         : `<a class="btn btn-vitrin" href="/one-cikar/${i.id}">İlanı öne çıkar</a>`) : ""}
@@ -534,48 +549,21 @@ async function basvuruAlani(i, benim, yayinda) {
   }
   if (!yayinda) { k.innerHTML = ""; return; }
   const baslik = sahiplendirme ? "Bu dostu sahiplenmek ister misin?" : i.kategori === "kayip" ? "Bu dostu gördün mü?" : "Bu dost senin mi?";
-  if (!S.kullanici) {
-    k.innerHTML = `<div class="kutu form"><h2 style="font-size:22px">${baslik}</h2>
-      <p class="bilgi">${sahiplendirme ? "Başvuru yapmak" : "İlan sahibine ulaşmak"} için ücretsiz üye ol ya da giriş yap.</p>
-      <a class="btn btn-ana" href="/giris?devam=${encodeURIComponent(location.pathname)}">Giriş yap / Üye ol</a></div>`;
-    return;
-  }
-  const { data: onceki } = await sb.from("basvurular").select("durum, created_at").eq("ilan_id", i.id).eq("gonderen_id", S.kullanici.id).maybeSingle();
-  if (onceki) {
-    k.innerHTML = `<div class="kutu form"><h2 style="font-size:22px">${sahiplendirme ? "Başvurun gönderildi" : "Mesajın iletildi"}</h2>
-      <p class="bilgi">${tarih(onceki.created_at)} tarihinde gönderdin. Durum: <b>${esc(BASVURU_DURUM[onceki.durum])}</b></p>
-      <p class="bilgi">İlan sahibi seninle telefonla iletişime geçecek.</p></div>`;
-    return;
-  }
-  k.innerHTML = `<form class="kutu form" id="basvuru">
+  const wa = i.whatsapp ? waNumara(i.telefon) : "";
+  const tel = String(i.telefon || "").replace(/[^\d+]/g, "");
+  const metin = `Merhaba, PetPatiBul'daki "${i.ad}" ilanınız için yazıyorum. ${location.origin}/ilan/${i.id}`;
+  k.innerHTML = `<div class="kutu form iletisim-kutu">
     <h2 style="font-size:22px">${baslik}</h2>
-    <p class="bilgi">${sahiplendirme ? "Başvurun" : "Mesajın"} yalnızca ilan sahibine iletilir. Telefon numaranı başka kimse görmez.</p>
-    <label class="alan">Adın soyadın<input name="ad" required maxlength="80" autocomplete="name"></label>
-    <label class="alan">Telefon<input name="telefon" type="tel" required minlength="10" maxlength="20" autocomplete="tel" placeholder="05xx xxx xx xx"></label>
-    ${sahiplendirme ? `
-    <label class="alan">Yaşadığın il<select name="il" required>${ilSecenekleri(i.il, "Seç")}</select></label>
-    <label class="alan">Evin nasıl?<select name="ev_tipi" required><option value="">Seç</option><option>Apartman dairesi</option><option>Bahçeli ev</option><option>Müstakil ev</option><option>Diğer</option></select></label>
-    <label class="onay"><input type="checkbox" name="baska_hayvan"> Evde başka evcil hayvan var</label>
-    <label class="onay"><input type="checkbox" name="cocuk"> Evde küçük çocuk var</label>
-    <label class="alan">Neden sahiplenmek istiyorsun?<textarea name="mesaj" required maxlength="2000"></textarea></label>`
-    : `<label class="alan">${i.kategori === "kayip" ? "Nerede ve ne zaman gördün?" : "Bu dostun sana ait olduğunu nasıl anlatırsın?"}<textarea name="mesaj" required maxlength="2000"></textarea></label>`}
-    <label class="onay" style="align-items:flex-start"><input type="checkbox" required style="margin-top:2px"> <span style="font-size:14px;color:var(--yazi2)"><a href="/kvkk" target="_blank">KVKK aydınlatma metnini</a> okudum, bilgilerimin ilan sahibiyle paylaşılmasını onaylıyorum.</span></label>
-    <button class="btn btn-ana" type="submit">${sahiplendirme ? "Başvuruyu gönder" : "Mesajı gönder"}</button>
-    <div class="mesaj" role="status"></div>
+    ${tel ? `<p class="bilgi">İlan sahibiyle doğrudan iletişime geç.</p>
+      <a class="iletisim-tel" href="tel:${esc(tel)}">${esc(telBicim(i.telefon))}</a>
+      ${wa ? `<a class="btn btn-whatsapp" href="https://wa.me/${wa}?text=${encodeURIComponent(metin)}" target="_blank" rel="noopener">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3z"/></svg>
+        WhatsApp'tan yaz</a>` : ""}
+      <a class="btn" href="tel:${esc(tel)}">Ara</a>`
+      : `<p class="bilgi">İlan sahibi henüz bir iletişim numarası eklemedi.</p>`}
+    <p class="bilgi" style="font-size:13px">Görüşmeyi ilan sahibiyle kendiniz yürütürsünüz, PetPatiBul aracılık yapmaz. Hayvanla tanışmadan karar vermeyin.</p>
     ${sahiplendirme ? `<p class="uyari">Sahiplendirme ücretsizdir. Senden para isteyen olursa lütfen ilanı şikayet et.</p>` : ""}
-  </form>`;
-  $("#basvuru").onsubmit = async e => {
-    e.preventDefault(); const fd = new FormData(e.target), m = $(".mesaj", e.target), btn = $("button[type=submit]", e.target);
-    btn.disabled = true;
-    const { error } = await sb.from("basvurular").insert({
-      ilan_id: i.id, ad: fd.get("ad").trim(), telefon: fd.get("telefon").trim(), il: fd.get("il") || null, ev_tipi: fd.get("ev_tipi") || null,
-      baska_hayvan: !!fd.get("baska_hayvan"), cocuk: !!fd.get("cocuk"), mesaj: fd.get("mesaj").trim(),
-    });
-    btn.disabled = false;
-    if (error) return mesaj(m, hataMetni(error), true);
-    await basvuruAlani(i, false, true);
-    bildir(sahiplendirme ? "Başvurun ilan sahibine iletildi." : "Mesajın ilan sahibine iletildi.");
-  };
+  </div>`;
 }
 
 // ---------- giriş / üyelik ----------
@@ -587,7 +575,7 @@ async function girisSayfasi() {
   let mod = /type=recovery/.test(location.hash) ? "yeni" : "giris";
   sayfa(`<div class="kap cok-dar"><div class="kutu">
     <h1 style="font-size:30px;font-weight:900;margin-bottom:6px" id="g-baslik"></h1>
-    <p class="bilgi" style="margin-bottom:20px">İlan vermek ve başvuru yapmak ücretsizdir.</p>
+    <p class="bilgi" style="margin-bottom:20px">İlan vermek ve ilanlara ulaşmak ücretsizdir.</p>
     <div class="sekmeler" role="tablist" id="g-sekmeler">
       <button type="button" role="tab" data-mod="giris">Giriş yap</button>
       <button type="button" role="tab" data-mod="kayit">Üye ol</button>
@@ -665,6 +653,10 @@ async function ilanFormu(id) {
     if (!data || (data.sahip_id !== S.kullanici.id && !S.yonetici)) { sayfa(`<div class="kap bos-durum"><h1>Bu ilanı düzenleyemezsin</h1><p><a href="/hesabim">Hesabıma dön</a></p></div>`); return; }
     i = data;
   }
+  if (!id) {
+    const { data: son } = await sb.from("ilanlar").select("telefon, whatsapp").eq("sahip_id", S.kullanici.id).not("telefon", "is", null).order("created_at", { ascending: false }).limit(1);
+    if (son && son[0]) { i.telefon = son[0].telefon; i.whatsapp = son[0].whatsapp; }
+  }
   meta(id ? "İlanı düzenle" : "Ücretsiz ilan ver");
   let fotolar = [...(i.fotolar || [])];
   const ozler = Object.entries(OZELLIK).map(([k, v]) => `<label class="onay"><input type="checkbox" name="${k}"${i[k] ? " checked" : ""}> ${esc(v)}</label>`).join("");
@@ -687,6 +679,11 @@ async function ilanFormu(id) {
       </div>
       <fieldset id="ozellik-alani"><legend>Sağlık ve karakter</legend>${ozler}</fieldset>
       <label class="alan">Açıklama<textarea name="aciklama" maxlength="4000" rows="6" placeholder="Karakteri, alışkanlıkları, neden yeni bir yuvaya ihtiyacı olduğu...">${esc(i.aciklama || "")}</textarea></label>
+      <fieldset><legend>İletişim</legend>
+        <label class="alan">Telefon numaran<input name="telefon" type="tel" required minlength="10" maxlength="20" autocomplete="tel" inputmode="tel" placeholder="05xx xxx xx xx" value="${esc(i.telefon || "")}">
+          <small>Bu numara ilan sayfasında herkese görünür. İlgilenenler seni doğrudan arar ya da WhatsApp'tan yazar.</small></label>
+        <label class="onay"><input type="checkbox" name="whatsapp"${i.whatsapp === false ? "" : " checked"}> Bu numaradan WhatsApp ile ulaşılabilir</label>
+      </fieldset>
       <div class="alan">Fotoğraflar <small>En fazla ${MAKS_FOTO} fotoğraf. İlk fotoğraf kapakta görünür.</small>
         <div class="foto-onizleme" id="foto-liste"></div>
         <label class="btn" style="align-self:flex-start">Fotoğraf ekle<input type="file" accept="image/*" multiple id="foto-sec" class="gizli"></label>
@@ -731,7 +728,9 @@ async function ilanFormu(id) {
       kategori: i.kategori, tur: fd.get("tur"), ad: fd.get("ad").trim(), irk: fd.get("irk").trim() || null,
       yas_grubu: fd.get("yas_grubu") || null, cinsiyet: fd.get("cinsiyet"), il: fd.get("il"), ilce: fd.get("ilce").trim() || null,
       aciklama: fd.get("aciklama").trim() || null, fotolar,
+      telefon: fd.get("telefon").trim(), whatsapp: !!fd.get("whatsapp"),
     };
+    if (fd.get("telefon").replace(/\D/g, "").length < 10) return mesaj(m, "Geçerli bir telefon numarası yaz (örn. 0532 123 45 67).", true);
     Object.keys(OZELLIK).forEach(k => { kayit[k] = i.kategori === "sahiplendirme" && !!fd.get(k); });
     if (!fotolar.length && !confirm("Fotoğraf eklemedin. Fotoğraflı ilanlar çok daha hızlı yuva buluyor. Yine de gönderilsin mi?")) return;
     $("#kaydet").disabled = true;
@@ -749,21 +748,13 @@ async function hesabimSayfasi() {
   if (girisGerekli()) return;
   meta("Hesabım");
   const uid = S.kullanici.id;
-  const [il, gon, od] = await Promise.all([
+  const [il, od] = await Promise.all([
     sb.from("ilanlar").select("*").eq("sahip_id", uid).order("created_at", { ascending: false }),
-    sb.from("basvurular").select("*, ilanlar(id, ad, il, tur)").eq("gonderen_id", uid).order("created_at", { ascending: false }),
     sb.from("odemeler").select("*, ilanlar(ad), paketler(ad)").eq("sahip_id", uid).order("created_at", { ascending: false }),
   ]);
   if (il.error) throw il.error;
   const ilanlar = il.data;
-  let gelen = [];
-  if (ilanlar.length) {
-    const r = await sb.from("basvurular").select("*").in("ilan_id", ilanlar.map(x => x.id)).order("created_at", { ascending: false });
-    gelen = r.data || [];
-  }
   const ilanSatiri = x => {
-    const b = gelen.filter(g => g.ilan_id === x.id);
-    const yeni = b.filter(g => g.durum === "yeni").length;
     const acik = ["bekliyor", "yayinda"].includes(x.durum);
     return `<div class="satir">
       <div class="satir-foto">${x.fotolar && x.fotolar[0] ? `<img src="${esc(x.fotolar[0])}" alt="">` : ""}</div>
@@ -773,7 +764,7 @@ async function hesabimSayfasi() {
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <span class="durum d-${x.durum}">${esc(ILAN_DURUM[x.durum])}</span>
           ${oneCikan(x) ? `<span class="durum" style="background:var(--vitrin-acik);color:var(--vitrin)">Öne çıkan · ${tarih(x.one_cikan_bitis)}'e kadar</span>` : ""}
-          ${yeni ? `<span class="durum d-yeni">${yeni} yeni başvuru</span>` : ""}
+          ${!x.telefon && ["bekliyor", "yayinda"].includes(x.durum) ? `<span class="durum d-reddedildi">Telefon eklenmemiş</span>` : ""}
         </div>
         ${x.durum === "reddedildi" && x.red_notu ? `<span class="bilgi">Not: ${esc(x.red_notu)}</span>` : ""}
       </div>
@@ -783,14 +774,6 @@ async function hesabimSayfasi() {
         ${x.durum === "yayinda" ? `<button class="btn btn-kucuk" data-kapat="${x.id}" data-durum="sahiplendi">${x.kategori === "sahiplendirme" ? "Sahiplendi" : "Kavuştu"}</button>` : ""}
         ${acik || x.durum === "reddedildi" ? `<button class="btn btn-kucuk" data-kapat="${x.id}" data-durum="kaldirildi">Kaldır</button>` : ""}
       </div>
-      ${b.length ? `<details style="flex-basis:100%"><summary style="cursor:pointer;font-weight:600;min-height:32px">Başvurular (${b.length})</summary>
-        <div style="display:grid;gap:10px;margin-top:10px">${b.map(g => `<div class="basvuru">
-          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(g.ad)}</b><span class="durum d-${g.durum}">${esc(BASVURU_DURUM[g.durum])}</span></div>
-          <span>Telefon: <a href="tel:${esc(g.telefon.replace(/[^\d+]/g, ""))}">${esc(g.telefon)}</a>${g.il ? " · " + esc(g.il) : ""}${g.ev_tipi ? " · " + esc(g.ev_tipi) : ""}${g.baska_hayvan ? " · Evde başka hayvan var" : ""}${g.cocuk ? " · Evde çocuk var" : ""}</span>
-          <span style="white-space:pre-line">${esc(g.mesaj || "")}</span>
-          <span class="bilgi">${tarih(g.created_at)}</span>
-          ${g.durum === "yeni" ? `<div class="satir-dugmeler"><button class="btn btn-kucuk btn-ana" data-basvuru="${g.id}" data-karar="kabul">Kabul et</button><button class="btn btn-kucuk" data-basvuru="${g.id}" data-karar="red">Reddet</button></div>` : ""}
-        </div>`).join("")}</div></details>` : ""}
     </div>`;
   };
 
@@ -801,9 +784,6 @@ async function hesabimSayfasi() {
     </div>
     <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">İlanlarım</h2>
       ${ilanlar.length ? ilanlar.map(ilanSatiri).join("") : `<p class="bilgi">Henüz ilan vermedin.</p>`}
-    </section>
-    <section class="kutu" style="margin-bottom:24px"><h2 style="font-size:22px;margin-bottom:8px">Gönderdiğim başvurular</h2>
-      ${(gon.data || []).length ? gon.data.map(g => `<div class="satir"><div class="satir-govde"><b>${g.ilanlar ? `<a href="/ilan/${g.ilanlar.id}">${esc(g.ilanlar.ad)}</a>` : "Kaldırılmış ilan"}</b><span class="bilgi">${tarih(g.created_at)}</span></div><span class="durum d-${g.durum}">${esc(BASVURU_DURUM[g.durum])}</span></div>`).join("") : `<p class="bilgi">Henüz başvuru yapmadın.</p>`}
     </section>
     <div id="hesabim-ek"></div>
     ${(od.data || []).length ? `<section class="kutu"><h2 style="font-size:22px;margin-bottom:8px">Öne çıkarma ödemelerim</h2>
@@ -818,11 +798,6 @@ async function hesabimSayfasi() {
     const { error } = await sb.from("ilanlar").update({ durum: d }).eq("id", b.dataset.kapat);
     if (error) return bildir(hataMetni(error));
     bildir(d === "sahiplendi" ? "Tebrikler! İlan kapatıldı." : "İlan kaldırıldı."); hesabimSayfasi();
-  });
-  $$("[data-basvuru]").forEach(b => b.onclick = async () => {
-    const { error } = await sb.from("basvurular").update({ durum: b.dataset.karar }).eq("id", b.dataset.basvuru);
-    if (error) return bildir(hataMetni(error));
-    bildir(b.dataset.karar === "kabul" ? "Başvuru kabul edildi. Başvuranı telefonla arayabilirsin." : "Başvuru reddedildi."); hesabimSayfasi();
   });
 }
 

@@ -366,3 +366,9 @@ legend{font-weight:600;font-size:14px;margin-bottom:10px;padding:0}
 .ozet-grup{display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px dashed var(--cizgi)}
 details>summary.btn{list-style:none;cursor:pointer}
 details>summary.btn::-webkit-details-marker{display:none}
+
+/* ilan iletişim kutusu */
+.iletisim-tel{font-size:26px;font-weight:800;color:var(--yazi);text-decoration:none;letter-spacing:.5px}
+.iletisim-tel:hover{color:var(--ana)}
+.btn-whatsapp{background:#25d366;color:#fff;border-color:#25d366;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-whatsapp:hover{background:#1ebe5a;border-color:#1ebe5a;color:#fff}

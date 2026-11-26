@@ -4,7 +4,7 @@
 
 const ONAY_DURUM = { bekliyor: "Onayını bekliyor", onaylandi: "Onaylandı", reddedildi: "Reddedildi" };
 const SEKMELER = [
-  ["/yonetim", "Özet"], ["/yonetim/ilanlar", "İlanlar"], ["/yonetim/reklamlar", "Reklamlar"], ["/yonetim/basvurular", "Başvurular"],
+  ["/yonetim", "Özet"], ["/yonetim/ilanlar", "İlanlar"], ["/yonetim/reklamlar", "Reklamlar"],
   ["/yonetim/sikayetler", "Şikayetler"], ["/yonetim/uyeler", "Üyeler"], ["/yonetim/urunler", "Ürünler"], ["/yonetim/siparisler", "Siparişler"],
 ];
 function yonetimSekmeleri(aktif) {
@@ -48,7 +48,7 @@ async function yOzet() {
     say(sb.from("sikayetler").select("id", t()).eq("cozuldu", false)),
     say(sb.from("magaza_siparisleri").select("id", t()).in("durum", ["odendi", "hazirlaniyor"])),
     say(sb.from("bagislar").select("id", t()).eq("durum", "odendi").eq("listede", false)),
-    say(sb.from("basvurular").select("id", t()).eq("durum", "yeni")),
+    Promise.resolve(0),
     say(sb.from("ilanlar").select("id", t()).eq("durum", "yayinda")),
     say(sb.from("ilanlar").select("id", t()).gt("one_cikan_bitis", new Date().toISOString())),
     uyeListesi(true).then(l => l.length),
@@ -73,7 +73,6 @@ async function yOzet() {
     <div class="ozet-izgara">
       ${kart(yayinda, "Yayındaki ilan", "/yonetim/ilanlar?durum=yayinda")}
       ${kart(vitrin, "Şu an öne çıkan ilan", "/yonetim/reklamlar")}
-      ${kart(basvuru, "Yanıt bekleyen başvuru", "/yonetim/basvurular")}
       ${kart(uyeler, "Üye", "/yonetim/uyeler")}
     </div>
   </div>`);

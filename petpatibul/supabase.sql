@@ -64,11 +64,16 @@ create table if not exists ilanlar (
   durum text not null default 'bekliyor'
     check (durum in ('bekliyor','yayinda','reddedildi','sahiplendi','kaldirildi')),
   red_notu text,
+  telefon text check (telefon is null or char_length(telefon) between 10 and 20), -- ilanda herkese görünür
+  whatsapp boolean not null default true,
   one_cikan_bitis timestamptz,         -- reklam (öne çıkarma) bitiş zamanı
   yayin_tarihi timestamptz,
   created_at timestamptz not null default now()
 );
 create index if not exists ilanlar_durum on ilanlar(durum, il, tur);
+-- Eski kurulumlar için: ilan sahibinin iletişim numarası (ilanda görünür, site aracılık yapmaz).
+alter table ilanlar add column if not exists telefon text check (telefon is null or char_length(telefon) between 10 and 20);
+alter table ilanlar add column if not exists whatsapp boolean not null default true;
 create index if not exists ilanlar_sahip on ilanlar(sahip_id);
 
 -- Kullanıcı kendi ilanını onaylayamaz ve kendine ücretsiz reklam veremez:

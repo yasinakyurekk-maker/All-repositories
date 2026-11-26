@@ -108,6 +108,7 @@ async function yIlanlar() {
           ${x.aciklama ? `<span class="bilgi" style="white-space:pre-line">${esc(x.aciklama.slice(0, 300))}</span>` : ""}
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <span class="durum d-${x.durum}">${esc(ILAN_DURUM[x.durum])}</span>
+            ${x.uye_sildi ? `<span class="durum d-reddedildi">Üye tarafından silindi · ${tarih(x.uye_sildi)}</span>` : ""}
             ${oneCikan(x) ? `<span class="durum d-bekliyor">Öne çıkan · ${tarih(x.one_cikan_bitis)}'e kadar</span>` : ""}
           </div>
           ${x.red_notu ? `<span class="bilgi">Ret notu: ${esc(x.red_notu)}</span>` : ""}

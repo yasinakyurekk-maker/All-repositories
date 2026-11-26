@@ -79,6 +79,8 @@ alter table ilanlar add constraint ilanlar_yas_grubu_check check (yas_grubu in (
 -- Eski kurulumlar için: ilan sahibinin iletişim numarası (ilanda görünür, site aracılık yapmaz).
 alter table ilanlar add column if not exists telefon text check (telefon is null or char_length(telefon) between 10 and 20);
 alter table ilanlar add column if not exists whatsapp boolean not null default true;
+-- Üye kapanmış ilanını kendi listesinden silebilir; kayıt yönetim için saklanır.
+alter table ilanlar add column if not exists uye_sildi timestamptz;
 create index if not exists ilanlar_sahip on ilanlar(sahip_id);
 
 -- Kullanıcı kendi ilanını onaylayamaz ve kendine ücretsiz reklam veremez:
@@ -88,6 +90,7 @@ language plpgsql security definer set search_path = public as $$
 begin
   if is_admin() or is_servis() then
     if new.durum = 'yayinda' and new.yayin_tarihi is null then new.yayin_tarihi := now(); end if;
+    if new.durum = 'yayinda' then new.uye_sildi := null; end if;
     return new;
   end if;
   if tg_op = 'INSERT' then
@@ -96,9 +99,21 @@ begin
     new.one_cikan_bitis := null;
     new.yayin_tarihi := null;
     new.red_notu := null;
+    new.uye_sildi := null;
     return new;
   end if;
   -- güncelleme (ilan sahibi)
+  if old.uye_sildi is not null then
+    return old;                                   -- üyenin sildiği ilan artık değişmez
+  end if;
+  if new.uye_sildi is not null then
+    if old.durum not in ('sahiplendi','kaldirildi','reddedildi') then
+      raise exception 'Yalnızca kapanmış ilanlar silinebilir';
+    end if;
+    new := old;
+    new.uye_sildi := now();                       -- yumuşak silme: yalnızca üyenin listesinden kalkar
+    return new;
+  end if;
   new.sahip_id := old.sahip_id;
   new.one_cikan_bitis := old.one_cikan_bitis;
   new.yayin_tarihi := old.yayin_tarihi;

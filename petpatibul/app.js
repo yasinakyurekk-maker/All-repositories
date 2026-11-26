@@ -780,7 +780,7 @@ async function hesabimSayfasi() {
   meta("Hesabım");
   const uid = S.kullanici.id;
   const [il, od] = await Promise.all([
-    sb.from("ilanlar").select("*").eq("sahip_id", uid).order("created_at", { ascending: false }),
+    sb.from("ilanlar").select("*").eq("sahip_id", uid).is("uye_sildi", null).order("created_at", { ascending: false }),
     sb.from("odemeler").select("*, ilanlar(ad), paketler(ad)").eq("sahip_id", uid).order("created_at", { ascending: false }),
   ]);
   if (il.error) throw il.error;
@@ -805,6 +805,7 @@ async function hesabimSayfasi() {
         ${x.durum === "sahiplendi" ? `<button class="btn btn-kucuk btn-ana" data-yeniden="${x.id}">Yeniden yayına al</button>` : ""}
         ${x.durum === "yayinda" ? `<button class="btn btn-kucuk" data-kapat="${x.id}" data-durum="sahiplendi">${x.kategori === "sahiplendirme" ? "Sahiplendi" : "Kavuştu"}</button>` : ""}
         ${acik || x.durum === "reddedildi" ? `<button class="btn btn-kucuk" data-kapat="${x.id}" data-durum="kaldirildi">Kaldır</button>` : ""}
+        ${["sahiplendi", "kaldirildi", "reddedildi"].includes(x.durum) ? `<button class="btn btn-kucuk btn-sil" data-uye-sil="${x.id}">Sil</button>` : ""}
       </div>
     </div>`;
   };
@@ -829,6 +830,12 @@ async function hesabimSayfasi() {
     const { error } = await sb.from("ilanlar").update({ durum: "bekliyor" }).eq("id", b.dataset.yeniden);
     if (error) return bildir(hataMetni(error));
     bildir("İlan yeniden açıldı. Onaylanınca tekrar yayına girecek."); hesabimSayfasi();
+  });
+  $$("[data-uye-sil]").forEach(b => b.onclick = async () => {
+    if (!confirm("İlan listenden silinecek. Emin misin?")) return;
+    const { error } = await sb.from("ilanlar").update({ uye_sildi: new Date().toISOString() }).eq("id", b.dataset.uyeSil);
+    if (error) return bildir(hataMetni(error));
+    bildir("İlan silindi."); hesabimSayfasi();
   });
   $$("[data-kapat]").forEach(b => b.onclick = async () => {
     const d = b.dataset.durum;

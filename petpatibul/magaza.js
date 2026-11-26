@@ -468,7 +468,7 @@ async function yUrunler() {
       <div class="form-izgara">
         <label class="alan">Kargo ücreti (TL)<input name="kargo_ucreti" type="number" min="0" step="0.01" value="${a.kargo_ucreti}" required></label>
         <label class="alan">Bu tutar ve üstü kargo bedava (TL)<input name="ucretsiz_kargo_esigi" type="number" min="0" step="1" value="${a.ucretsiz_kargo_esigi}" required></label>
-        <label class="alan">Petshop satışlarında genel komisyon (%)<input name="komisyon_orani" type="number" min="0" max="100" step="0.1" value="${a.komisyon_orani ?? 10}" required><small>Petshop başına farklı oran Petshoplar sekmesinden girilir.</small></label>
+        <label class="alan">Petshop satışlarında genel komisyon (%)<input name="komisyon_orani" type="number" min="0" max="100" step="0.1" value="${a.komisyon_orani ?? 10}" required><small>Petshop başına farklı oran Mağazalar sekmesinden girilir.</small></label>
       </div>
       <button class="btn" type="submit" style="align-self:flex-start">Kaydet</button>
     </form>

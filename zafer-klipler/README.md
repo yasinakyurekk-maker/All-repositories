@@ -4,6 +4,7 @@ Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri oto
 
 ## 2026-11-27
 - [1000_NOT.txt](gunluk/2026-11-27/1000_NOT.txt)
+- [1200_NOT.txt](gunluk/2026-11-27/1200_NOT.txt)
 - [alinti_1_gurcu-polisine-diplomatik-karsilik-veril.jpg](gunluk/2026-11-27/alinti_1_gurcu-polisine-diplomatik-karsilik-veril.jpg)
 - [alinti_1_gurcu-polisine-diplomatik-karsilik-veril.txt](gunluk/2026-11-27/alinti_1_gurcu-polisine-diplomatik-karsilik-veril.txt)
 - [alinti_2_bu-nasil-bir-cifte-standart.jpg](gunluk/2026-11-27/alinti_2_bu-nasil-bir-cifte-standart.jpg)

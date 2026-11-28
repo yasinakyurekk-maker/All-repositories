@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>petpatibul.com | Ücretsiz kedi ve köpek sahiplendirme ilanları</title>
+<meta name="description" content="Türkiye'nin ücretsiz evcil hayvan sahiplendirme platformu. İline göre kedi, köpek ve kuş sahiplendirme ilanlarını incele, kayıp hayvan ilanı ver.">
+<meta property="og:title" content="petpatibul.com | Ücretsiz sahiplendirme ilanları">
+<meta property="og:description" content="Yuva arayan kedi, köpek ve diğer dostlarımızı bulunduğun ile göre keşfet.">
+<meta property="og:type" content="website">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<a class="atla" href="#icerik">İçeriğe geç</a>
+
+<header class="ust">
+  <div class="kap ust-in">
+    <a href="/" class="logo" aria-label="petpatibul.com ana sayfa">
+      <span class="logo-ikon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="9" r="2.2"/><circle cx="10" cy="5.5" r="2.2"/><circle cx="14" cy="5.5" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M12 11c-3 0-6 3.5-6 6.2C6 19.3 7.6 20 9 20c1.3 0 2-.6 3-.6s1.7.6 3 .6c1.4 0 3-.7 3-2.8C18 14.5 15 11 12 11z"/></svg></span>
+      <span class="logo-yazi">petpatibul</span>
+    </a>
+    <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="ana-menu" aria-label="Menüyü aç">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav class="ana-menu" id="ana-menu" aria-label="Ana menü">
+      <a href="/sahiplendirme">Sahiplen</a>
+      <a href="/kayip-ilanlari">Kayıp ve bulunan</a>
+      <a href="/magaza">Mağaza</a>
+      <a href="/bagis">Bağış yap</a>
+      <span class="menu-bosluk"></span>
+      <span id="oturum-alani"><a href="/giris">Giriş yap</a></span>
+      <a href="/sepet" class="sepet-link" aria-label="Sepet">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <span class="menu-sepet-yazi">Sepet</span><span id="sepet-sayi" class="sepet-sayi" hidden></span>
+      </a>
+      <a href="/ilan-ver" class="btn btn-ana">Ücretsiz ilan ver</a>
+    </nav>
+  </div>
+</header>
+
+<main id="icerik" tabindex="-1">
+  <div class="kap bos-durum"><p>Yükleniyor…</p></div>
+</main>
+
+<footer class="alt">
+  <div class="kap alt-in">
+    <div class="alt-marka">
+      <span class="logo-yazi">petpatibul</span>
+      <p>Türkiye'nin ücretsiz evcil hayvan sahiplendirme platformu. Hayvan satışına izin verilmez.</p>
+    </div>
+    <nav aria-label="Alt menü" class="alt-menu">
+      <a href="/kedi-sahiplendirme">Kedi sahiplendirme</a>
+      <a href="/kopek-sahiplendirme">Köpek sahiplendirme</a>
+      <a href="/kus-sahiplendirme">Kuş sahiplendirme</a>
+      <a href="/kayip-ilanlari">Kayıp ilanları</a>
+      <a href="/magaza">Mama ve ekipman</a>
+      <a href="/bagis">Sokak hayvanlarına bağış</a>
+      <a href="/hakkimizda">Hakkımızda</a>
+      <a href="/sss">Sıkça sorulan sorular</a>
+      <a href="/kvkk">KVKK</a>
+      <a href="/kullanim-kosullari">Kullanım koşulları</a>
+    </nav>
+  </div>
+</footer>
+
+<div id="bildirim" class="bildirim" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/config.js"></script>
+<script src="/app.js"></script>
+<script src="/magaza.js"></script>
+<script src="/yonetim.js"></script>
+</body>
+</html>

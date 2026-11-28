@@ -2,6 +2,13 @@
 
 Günlük olarak otomatik hazırlanan klipler ve alıntı kartları. Hiçbiri otomatik paylaşılmaz.
 
+## 2026-11-28
+- [1000_NOT.txt](gunluk/2026-11-28/1000_NOT.txt)
+- [alinti_1_ekonomik-cokus-hizlanarak-artiyor.jpg](gunluk/2026-11-28/alinti_1_ekonomik-cokus-hizlanarak-artiyor.jpg)
+- [alinti_1_ekonomik-cokus-hizlanarak-artiyor.txt](gunluk/2026-11-28/alinti_1_ekonomik-cokus-hizlanarak-artiyor.txt)
+- [alinti_2_dan-vergi-tepkisi.jpg](gunluk/2026-11-28/alinti_2_dan-vergi-tepkisi.jpg)
+- [alinti_2_dan-vergi-tepkisi.txt](gunluk/2026-11-28/alinti_2_dan-vergi-tepkisi.txt)
+
 ## 2026-11-27
 - [1000_NOT.txt](gunluk/2026-11-27/1000_NOT.txt)
 - [1200_NOT.txt](gunluk/2026-11-27/1200_NOT.txt)
